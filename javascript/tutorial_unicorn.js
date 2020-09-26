@@ -23,5 +23,5 @@ var r0 = e.reg_read_i32(uc.ARM_REG_R0);  // 0x37
 var r1 = e.reg_read_i32(uc.ARM_REG_R1);  // 0x333
 
 // Write to document
-document.getElementById("r0_value").innerHTML = "r0 = 0x" + r0.toString(16);
-document.getElementById("r1_value").innerHTML = "r1 = 0x" + r1.toString(16);
+document.getElementById("r0_value").innerHTML = "0x" + r0.toString(16);
+document.getElementById("r1_value").innerHTML = "0x" + r1.toString(16);
