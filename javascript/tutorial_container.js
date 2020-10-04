@@ -1,15 +1,15 @@
 async function tutorial_container()
 {
-	// Opens Docker Hub `busybox` repository.
-	const busybox = new Container.Repository('registry.hub.docker.com', 'library/busybox');
+	// Opens Docker Hub `repo` repository.
+	const repo = new Container.Repository('fa20-cs523-40.cs.illinois.edu:5000', 'python');
 
-	// Gets the tags for `busybox`.
-	const tags = await busybox.Tags;
+	// Gets the tags for `repo`.
+	const tags = await repo.Tags;
 
-	// Gets the image `busybox:latest`.
-	const image = await busybox.Image('latest');
+	// Gets the image `repo:latest`.
+	const image = await repo.Image('latest');
 
-	// Gets the manifest JSON for `busybox:latest`.
+	// Gets the manifest JSON for `repo:latest`.
 	const manifestJSON = await image.ManifestJSON;
 
 	// Gets the config digest and JSON.
@@ -17,10 +17,22 @@ async function tutorial_container()
 	const configDigest = await config.digest;
 	const configJSON = await config.JSON;
 
-	// Gets the layer tar.gz.
+	// Gets the file system from tar.gz.
 	const layers = await image.Layers;
-	const layerDigest = await layers[0].digest;
-	const layerArrayBuffer = await layers[0].arrayBuffer;
+	let filenameToFile = {};
+	var i;
+	for (i = 0; i < layers.length; i++){
+		const layerArrayBuffer = await layers[i].arrayBuffer;
+		console.log(layers[i]);
+		const unzipped = pako.ungzip(layerArrayBuffer).buffer;
+		const files = await untar(unzipped);
+		filenameToFile = files.reduce(
+			(filenameToFile, file) => {
+			  filenameToFile[file.name] = file;
+			  return filenameToFile;
+			}, 
+			filenameToFile);
+	}
 
 	// Write to document
 	document.getElementById("tags").innerHTML = JSON.stringify(tags);
@@ -28,8 +40,7 @@ async function tutorial_container()
 	document.getElementById("manifest").innerHTML = JSON.stringify(manifestJSON);
 	document.getElementById("config_digest").innerHTML = JSON.stringify(configDigest);
 	document.getElementById("config").innerHTML = JSON.stringify(configJSON);
-	document.getElementById("layer_digest").innerHTML = JSON.stringify(layerDigest);
-	document.getElementById("layer_array").innerHTML = JSON.stringify(layerArrayBuffer);
+	document.getElementById("file_system").innerHTML = JSON.stringify(filenameToFile);
 }
 
 window.onload = function()

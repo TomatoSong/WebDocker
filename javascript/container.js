@@ -184,7 +184,7 @@ const Container = (function() {
     }
 
     _makeUrl(apiSuffix) {
-      const apiPrefix = 'https://' + this._registry + '/v2/' + this._repository;
+      const apiPrefix = 'http://' + this._registry + '/v2/' + this._repository;
       return apiPrefix + apiSuffix;
     }
 
@@ -210,7 +210,7 @@ const Container = (function() {
   class _CrossOriginRequest {
 
     static wrap(url) {
-      const _PROXY_PREFIX = 'https://cors-anywhere.herokuapp.com/';
+      const _PROXY_PREFIX = '';
       return new _CrossOriginRequest(_PROXY_PREFIX + url);
     }
 
