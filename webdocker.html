@@ -4,11 +4,13 @@
 	  @import url("css/webdocker.css");
 	</style>
 
-    <script src="javascript/unicorn.min.js"></script>
-    <script src="javascript/libelf.min.js"></script>
-	<script src="javascript/container.js"></script>
-	<script src="javascript/untar.js"></script>
-	<script src="javascript/pako.min.js"></script>
+	<link rel="stylesheet" href="css/xterm.css" />
+    <script src="javascript/lib/unicorn.min.js"></script>
+    <script src="javascript/lib/libelf.min.js"></script>
+	<script src="javascript/lib/container.js"></script>
+	<script src="javascript/lib/untar.js"></script>
+	<script src="javascript/lib/pako.min.js"></script>
+	<script src="javascript/lib/xterm.js"></script>
   </head>
 
   <body>
@@ -32,9 +34,16 @@
 	<p>
 	  <strong>Header: </strong><span id="ehdr">Loading...</span><br>
 	</p>
+
+	<h2>Terminal Tutorial</h2>
+	<p>
+	  <strong>Terminal: </strong>
+	  <div id="terminal"></div>
+	</p>
   </body>
 
-  <script src="javascript/tutorial_unicorn.js"></script>
-  <script src="javascript/tutorial_container.js"></script>
-  <script src="javascript/tutorial_elf.js"></script>
+  <script src="javascript/src/tutorial_unicorn.js"></script>
+  <script src="javascript/src/tutorial_container.js"></script>
+  <script src="javascript/src/tutorial_elf.js"></script>
+  <script src="javascript/src/tutorial_terminal.js"></script>
 </html>

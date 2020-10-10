@@ -1,7 +1,7 @@
 async function tutorial_container()
 {
 	// Opens Docker Hub `repo` repository.
-	const repo = new Container.Repository('fa20-cs523-40.cs.illinois.edu:5000', 'python');
+	const repo = new Container.Repository('fa20-cs523-40.cs.illinois.edu:5000', 'hello-world');
 
 	// Gets the tags for `repo`.
 	const tags = await repo.Tags;
