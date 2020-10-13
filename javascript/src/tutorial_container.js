@@ -1,7 +1,9 @@
 async function tutorial_container()
 {
 	// Opens Docker Hub `repo` repository.
-	const repo = new Container.Repository('fa20-cs523-40.cs.illinois.edu:5000', 'hello-world');
+	const repo = new Container.Repository('www.simonyu.net:5000', 'hello-world');
+
+	repo.setCredentials("webdocker", "@Webdocker")
 
 	// Gets the tags for `repo`.
 	const tags = await repo.Tags;

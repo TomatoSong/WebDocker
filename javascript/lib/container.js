@@ -184,7 +184,7 @@ const Container = (function() {
     }
 
     _makeUrl(apiSuffix) {
-      const apiPrefix = 'http://' + this._registry + '/v2/' + this._repository;
+      const apiPrefix = 'https://' + this._registry + '/v2/' + this._repository;
       return apiPrefix + apiSuffix;
     }
 
@@ -210,7 +210,7 @@ const Container = (function() {
   class _CrossOriginRequest {
 
     static wrap(url) {
-      const _PROXY_PREFIX = '';
+      const _PROXY_PREFIX = 'https://www.simonyu.net:8080/';
       return new _CrossOriginRequest(_PROXY_PREFIX + url);
     }
 
