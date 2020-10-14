@@ -1,4 +1,4 @@
-fetch("binary/hello").then(response => response.arrayBuffer()).then((buffer) => {
+fetch("data/test").then(response => response.arrayBuffer()).then((buffer) => {
   // var buffer = new Uint8Array([0x7F, 0x45, 0x4C, 0x46, ...]);
   var elf = new Elf(buffer);
   if (elf.kind() != "elf") {

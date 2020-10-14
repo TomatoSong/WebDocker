@@ -38,7 +38,6 @@ async function tutorial_container()
 
 	// Write to document
 	document.getElementById("tags").innerHTML = JSON.stringify(tags);
-	document.getElementById("image").innerHTML = JSON.stringify(image);
 	document.getElementById("manifest").innerHTML = JSON.stringify(manifestJSON);
 	document.getElementById("config_digest").innerHTML = JSON.stringify(configDigest);
 	document.getElementById("config").innerHTML = JSON.stringify(configJSON);

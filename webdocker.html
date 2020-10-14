@@ -2,15 +2,17 @@
   <head>
 	<style>
 	  @import url("css/webdocker.css");
+	  @import url("css/xterm.css");
 	</style>
 
-	<link rel="stylesheet" href="css/xterm.css" />
-    <script src="javascript/lib/unicorn.min.js"></script>
-    <script src="javascript/lib/libelf.min.js"></script>
-	<script src="javascript/lib/container.js"></script>
-	<script src="javascript/lib/untar.js"></script>
-	<script src="javascript/lib/pako.min.js"></script>
-	<script src="javascript/lib/xterm.js"></script>
+    <script src="javascript/lib/unicorn.min.js?v=<? php echo time(); ?>"></script>
+    <script src="javascript/lib/libelf.min.js?v=<? php echo time(); ?>"></script>
+	<script src="javascript/lib/container.js?v=<? php echo time(); ?>"></script>
+	<script src="javascript/lib/untar.js?v=<? php echo time(); ?>"></script>
+	<script src="javascript/lib/pako.min.js?v=<? php echo time(); ?>"></script>
+	<script src="javascript/lib/xterm.js?v=<? php echo time(); ?>"></script>
+
+	<title>WebDocker</title>
   </head>
 
   <body>
@@ -23,7 +25,6 @@
 	<h2>Container Tutorial</h2>
 	<p>
 	  <strong>Tags: </strong><span id="tags">Loading...</span><br>
-	  <strong>Image: </strong><span id="image">Loading...</span><br>
 	  <strong>Manifest: </strong><span id="manifest">Loading...</span><br>
 	  <strong>Config Digest: </strong><span id="config_digest">Loading...</span><br>
 	  <strong>Config: </strong><span id="config">Loading...</span><br>
@@ -42,8 +43,8 @@
 	</p>
   </body>
 
-  <script src="javascript/src/tutorial_unicorn.js"></script>
-  <script src="javascript/src/tutorial_container.js"></script>
-  <script src="javascript/src/tutorial_elf.js"></script>
-  <script src="javascript/src/tutorial_terminal.js"></script>
+  <script src="javascript/src/tutorial_unicorn.js?v=<? php echo time(); ?>"></script>
+  <script src="javascript/src/tutorial_container.js?v=<? php echo time(); ?>"></script>
+  <script src="javascript/src/tutorial_elf.js?v=<? php echo time(); ?>"></script>
+  <script src="javascript/src/tutorial_terminal.js?v=<? php echo time(); ?>"></script>
 </html>
