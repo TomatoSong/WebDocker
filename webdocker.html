@@ -16,10 +16,17 @@
   </head>
 
   <body>
-	<h2>Unicorn Tutorial</h2>
+	<h2>ELF Loader</h2>
 	<p>
-	  <strong>R0 Value: </strong><span id="r0_value">Loading...</span><br>
-	  <strong>R1 Value: </strong><span id="r1_value">Loading...</span><br>
+      <span id="elf_loader">Loading...</span><br>
+    </p>
+
+	<h2>Terminal Tutorial</h2>
+	<div id="terminal"></div>
+
+	<h2>Libelf Tutorial</h2>
+	<p>
+	  <strong>ELF Header: </strong><span id="ehdr">Loading...</span><br>
 	</p>
 
 	<h2>Container Tutorial</h2>
@@ -31,13 +38,11 @@
 	  <strong>Files System: </strong><span id="file_system">Loading...</span><br>
 	</p>
 
-	<h2>Libelf Tutorial</h2>
+	<h2>Unicorn Tutorial</h2>
 	<p>
-	  <strong>ELF Header: </strong><span id="ehdr">Loading...</span><br>
+	  <strong>R0 Value: </strong><span id="r0_value">Loading...</span><br>
+	  <strong>R1 Value: </strong><span id="r1_value">Loading...</span><br>
 	</p>
-
-	<h2>Terminal Tutorial</h2>
-	<div id="terminal"></div>
   </body>
 
   <script src="javascript/src/tutorial_unicorn.js?v=<? php echo time(); ?>"></script>
