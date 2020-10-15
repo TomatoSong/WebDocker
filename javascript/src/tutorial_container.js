@@ -3,6 +3,7 @@ async function tutorial_container()
 	// Opens Docker Hub `repo` repository.
 	const repo = new Container.Repository('www.simonyu.net:5000', 'hello-world');
 
+	// Set credentials
 	repo.setCredentials("webdocker", "@Webdocker")
 
 	// Gets the tags for `repo`.
@@ -23,15 +24,15 @@ async function tutorial_container()
 	const layers = await image.Layers;
 	let filenameToFile = {};
 	var i;
-	for (i = 0; i < layers.length; i++){
+	for (i = 0; i < layers.length; i++)
+	{
 		const layerArrayBuffer = await layers[i].arrayBuffer;
-		console.log(layers[i]);
 		const unzipped = pako.ungzip(layerArrayBuffer).buffer;
 		const files = await untar(unzipped);
 		filenameToFile = files.reduce(
 			(filenameToFile, file) => {
-			  filenameToFile[file.name] = file;
-			  return filenameToFile;
+				filenameToFile[file.name] = file;
+				return filenameToFile;
 			}, 
 			filenameToFile);
 	}
