@@ -43,8 +43,3 @@ async function tutorial_container()
 	document.getElementById("config").innerHTML = JSON.stringify(configJSON);
 	document.getElementById("file_system").innerHTML = JSON.stringify(filenameToFile);
 }
-
-window.onload = function()
-{
-	tutorial_container();
-}
