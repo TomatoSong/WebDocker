@@ -16,7 +16,6 @@ function tutorial_terminal()
     term.writeln('Welcome to xterm.js');
     term.writeln('This is a local terminal emulation, without a real terminal in the back-end.');
     term.writeln('Type some keys and commands to play around.');
-    term.writeln('');
     term.prompt();
 
     buffer = '';
@@ -27,8 +26,8 @@ function tutorial_terminal()
 		
 		if (ev.keyCode === 13)
 		{
+			term.writeln('\r\nCommand received: ' + buffer);
 			term.prompt();
-			term.writeln('Command received: ' + buffer);
 			buffer = '';
 		}
 		else if (ev.keyCode === 8)
