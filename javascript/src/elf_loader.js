@@ -1,3 +1,19 @@
+function document_log(log)
+{
+	if (!this.string)
+	{
+		this.string = "";
+	}
+
+	if (this.string != "")
+	{
+		this.string += "<br>";
+	}
+
+	this.string += log;
+	document.getElementById("elf_loader").innerHTML = this.string;
+}
+
 function mem_log(unicorn, address, size)
 {
 	var buffer = unicorn.mem_read(address, size);
@@ -5,10 +21,10 @@ function mem_log(unicorn, address, size)
 
 	for (var i = 0; i < size; i ++)
 	{		
-		string += buffer[i].toString(16) + " ";
+		string += ("0" + buffer[i].toString(16)).substr(-2) + " ";
 	}
 
-	console.log(string);
+	document_log(string);
 }
 
 function reg_log(unicorn)
@@ -18,8 +34,8 @@ function reg_log(unicorn)
 	var ebx = unicorn.reg_read_i32(uc.X86_REG_EBX);
 
 	// Print register values
-	console.log("[INFO]: eax:", eax)
-	console.log("[INFO]: ebx:", ebx)
+	document_log("[INFO]: reg_log[eax]: " + eax.toString());
+	document_log("[INFO]: reg_log[ebx]: " + ebx.toString());
 }
 
 function execve(file)
@@ -30,6 +46,7 @@ function execve(file)
 	// Check if file is ELF
 	if (elf.kind() != "elf")
 	{
+		document_log("[ERROR]: not an ELF file.");
 		throw "[ERROR]: not an ELF file.";
 	}
 
@@ -39,6 +56,7 @@ function execve(file)
 	// Check if file is x86
 	if (ehdr.e_machine.num() != EM_386)
 	{
+		document_log("[ERROR]: not an x86 file.");
 		throw "[ERROR]: not an x86 file.";
 	}
 
@@ -84,9 +102,9 @@ function execve(file)
 
 	// Start emulation
 	// NOTE: starting from main directly (starting from entry point would fail, fix needed)
-	console.log("[INFO]: emulation started at 0x" + main_function_addr.toString(16) + ".")
+	document_log("[INFO]: emulation started at 0x" + main_function_addr.toString(16) + ".")
 	unicorn.emu_start(main_function_addr, main_function_addr + program_size, 0, 0);
-	console.log("[INFO]: emulation finished at 0x" +
+	document_log("[INFO]: emulation finished at 0x" +
 				(main_function_addr + program_size - 1).toString(16) + ".")
 
 	// Log register values
