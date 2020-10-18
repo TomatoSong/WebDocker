@@ -18,7 +18,7 @@ function tutorial_elf_worker(file)
 
 function tutorial_elf()
 {
-	const file_name = "data/test";
+	const file_name = "data/hello";
 
     fetch(file_name)
         .then(response => response.arrayBuffer())
