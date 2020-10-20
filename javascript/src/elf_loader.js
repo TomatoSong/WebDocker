@@ -76,7 +76,7 @@ function load_elf_binary(file) {
 	{
 		arch = uc.ARCH_X86;
 		mode = uc.MODE_32;
-		unicorn_base_addr = 0x08040000;
+		unicorn_base_addr = 0x08048000;
 	} else if (ehdr.e_machine.num() === EM_X86_64)
 	{
 		arch = uc.ARCH_X86;
@@ -90,10 +90,11 @@ function load_elf_binary(file) {
 	// Define variables
 	unicorn = new uc.Unicorn(arch, mode);
 
-	const unicorn_page_size = Math.ceil(file.byteLength / (4 * 1024)) * (4 * 1024)
-	const elf_entry = unicorn_base_addr + ehdr.e_entry.num();
+	const unicorn_page_size = Math.ceil(file.byteLength / (4 * 1024)) * (4 * 1024) + 4096
+	const elf_entry = ehdr.e_entry.num();
 
 	// Map memory for ELF file
+	// FIXME: mem_map range based on segment range
 	unicorn.mem_map(unicorn_base_addr, unicorn_page_size, uc.PROT_ALL);
 	document_log("[MMAP range]: " + unicorn_base_addr.toString(16) + " " + (unicorn_base_addr + unicorn_page_size).toString(16))
 	console.log(ehdr.e_phnum.num())
@@ -102,7 +103,8 @@ function load_elf_binary(file) {
 	for (var i = 0; i < ehdr.e_phnum.num(); i++)
 	{
 		// NOTE: only loading PF_X segment (loading others would override it, fix needed)
-		const phdr = elf.getphdr(1);
+		console.log(i)
+		const phdr = elf.getphdr(i);
 		if (phdr.p_type.num() !== PT_LOAD || phdr.p_filesz.num() === 0)
 		{
 
@@ -113,7 +115,7 @@ function load_elf_binary(file) {
 		const seg_end = seg_start + phdr.p_filesz.num();
 		const seg_data = new Uint8Array(file.slice(seg_start, seg_end));
 
-		unicorn.mem_write(unicorn_base_addr + phdr.p_vaddr.num(), seg_data);
+		unicorn.mem_write(phdr.p_vaddr.num(), seg_data);
 	}
 
 	return elf_entry
@@ -194,5 +196,5 @@ function elf_loader()
 
 	fetch(file_name)
 		.then(response => response.arrayBuffer())
-		.then(file => execve(file)).catch(() => {alert("error! core dumped"); reg_log(unicorn)});
+		.then(file => execve(file))//.catch(() => {alert("error! core dumped"); reg_log(unicorn)});
 }
