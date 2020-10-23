@@ -31,17 +31,19 @@ function reg_log(unicorn)
 {
 	// Read register values
 	var eax = unicorn.reg_read_i32(uc.X86_REG_EAX);
+	var rax = unicorn.reg_read_i64(uc.X86_REG_RAX);
 	var ebx = unicorn.reg_read_i32(uc.X86_REG_EBX);
 	var esp = unicorn.reg_read_i32(uc.X86_REG_ESP);
 	var eip = unicorn.reg_read_i32(uc.X86_REG_EIP);
-	var rsp = unicorn.reg_read(uc.X86_REG_RSP,8);
-	var rip = unicorn.reg_read(uc.X86_REG_RIP,8);
+	var rsp = unicorn.reg_read_i64(uc.X86_REG_RSP);
+	var rip = unicorn.reg_read_i64(uc.X86_REG_RIP);
 
 	// Print register values
-	document_log("[INFO]: reg_log[eax]: " + eax.toString() + " Hex: " + eax.toString(16));
-	document_log("[INFO]: reg_log[ebx]: " + ebx.toString() + " Hex: " + ebx.toString(16));
-	document_log("[INFO]: reg_log[esp]: " + esp.toString() + " Hex: " + esp.toString(16));
-	document_log("[INFO]: reg_log[eip]: " + eip.toString() + " Hex: " + eip.toString(16));
+	document_log("[INFO]: reg_log[eax]: " + eax + " Hex: " + eax);
+	document_log("[INFO]: reg_log[rax]: " + rax + " Hex: " + rax);
+	document_log("[INFO]: reg_log[ebx]: " + ebx + " Hex: " + ebx);
+	document_log("[INFO]: reg_log[esp]: " + esp + " Hex: " + esp);
+	document_log("[INFO]: reg_log[eip]: " + eip + " Hex: " + eip);
 
 	document_log("[INFO]: reg_log[rsp]: " + rsp + " Hex: " + rsp);
 	document_log("[INFO]: reg_log[rip]: " + rip + " Hex: " + rip);
@@ -75,7 +77,7 @@ function load_elf_binary(file) {
 	if (ehdr.e_machine.num() === EM_386)
 	{
 		arch = uc.ARCH_X86;
-		mode = uc.MODE_32;
+		mode = uc.MODE_64;
 		unicorn_base_addr = 0x08048000;
 	} else if (ehdr.e_machine.num() === EM_X86_64)
 	{
@@ -90,6 +92,8 @@ function load_elf_binary(file) {
 	// Define variables
 	unicorn = new uc.Unicorn(arch, mode);
 
+	//unicorn.set_integer_type(ELF_INT_OBJECT)
+
 	const unicorn_page_size = Math.ceil(file.byteLength / (4 * 1024)) * (4 * 1024) + 4096
 	const elf_entry = ehdr.e_entry.num();
 
@@ -97,13 +101,12 @@ function load_elf_binary(file) {
 	// FIXME: mem_map range based on segment range
 	unicorn.mem_map(unicorn_base_addr, unicorn_page_size, uc.PROT_ALL);
 	document_log("[MMAP range]: " + unicorn_base_addr.toString(16) + " " + (unicorn_base_addr + unicorn_page_size).toString(16))
-	console.log(ehdr.e_phnum.num())
+	
 
 	// Write segments to memory
 	for (var i = 0; i < ehdr.e_phnum.num(); i++)
 	{
 		// NOTE: only loading PF_X segment (loading others would override it, fix needed)
-		console.log(i)
 		const phdr = elf.getphdr(i);
 		if (phdr.p_type.num() !== PT_LOAD || phdr.p_filesz.num() === 0)
 		{
@@ -160,14 +163,14 @@ function start_thread64(elf_entry) {
 
 function start_thread(elf_entry) {
 	const main_function_addr = 0x08049cf5;
-	const program_size = 12;
+	const program_size = 10;
 
 	// Log memory values
 	mem_log(unicorn, elf_entry, 10)
 	mem_log(unicorn, main_function_addr, 10)
 
 	// Write register values
-	unicorn.reg_write_i32(uc.X86_REG_EAX, 123);
+	unicorn.reg_write_i64(uc.X86_REG_EAX, 123);
 	unicorn.reg_write_i32(uc.X86_REG_EBX, 456);
 
 	// Log register values
@@ -187,12 +190,12 @@ function start_thread(elf_entry) {
 function execve(file)
 {
 	const elf_entry = load_elf_binary(file);
-	start_thread64(elf_entry);
+	start_thread(elf_entry);
 }
 
 function elf_loader()
 {
-	const file_name = "data/hello";
+	const file_name = "data/test";
 
 	fetch(file_name)
 		.then(response => response.arrayBuffer())
