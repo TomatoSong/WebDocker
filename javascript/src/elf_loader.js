@@ -39,14 +39,14 @@ function reg_log(unicorn)
 	var rip = unicorn.reg_read_i64(uc.X86_REG_RIP);
 
 	// Print register values
-	document_log("[INFO]: reg_log[eax]: " + eax + " Hex: " + eax);
-	document_log("[INFO]: reg_log[rax]: " + rax + " Hex: " + rax);
-	document_log("[INFO]: reg_log[ebx]: " + ebx + " Hex: " + ebx);
-	document_log("[INFO]: reg_log[esp]: " + esp + " Hex: " + esp);
-	document_log("[INFO]: reg_log[eip]: " + eip + " Hex: " + eip);
+	document_log("[INFO]: reg_log[eax]: " + eax + " Hex: " + eax.hex());
+	document_log("[INFO]: reg_log[rax]: " + rax + " Hex: " + rax.hex());
+	document_log("[INFO]: reg_log[ebx]: " + ebx + " Hex: " + ebx.hex());
+	document_log("[INFO]: reg_log[esp]: " + esp + " Hex: " + esp.hex());
+	document_log("[INFO]: reg_log[eip]: " + eip + " Hex: " + eip.hex());
 
-	document_log("[INFO]: reg_log[rsp]: " + rsp + " Hex: " + rsp);
-	document_log("[INFO]: reg_log[rip]: " + rip + " Hex: " + rip);
+	document_log("[INFO]: reg_log[rsp]: " + rsp + " Hex: " + rsp.hex());
+	document_log("[INFO]: reg_log[rip]: " + rip + " Hex: " + rip.hex());
 }
 
 function hook_syscall() {
@@ -92,16 +92,10 @@ function load_elf_binary(file) {
 	// Define variables
 	unicorn = new uc.Unicorn(arch, mode);
 
-	//unicorn.set_integer_type(ELF_INT_OBJECT)
+	unicorn.set_integer_type(ELF_INT_OBJECT)
 
-	const unicorn_page_size = Math.ceil(file.byteLength / (4 * 1024)) * (4 * 1024) + 4096
+	const unicorn_page_size = Math.ceil(file.byteLength / (4 * 1024)) * (4 * 1024)
 	const elf_entry = ehdr.e_entry.num();
-
-	// Map memory for ELF file
-	// FIXME: mem_map range based on segment range
-	unicorn.mem_map(unicorn_base_addr, unicorn_page_size, uc.PROT_ALL);
-	document_log("[MMAP range]: " + unicorn_base_addr.toString(16) + " " + (unicorn_base_addr + unicorn_page_size).toString(16))
-	
 
 	// Write segments to memory
 	for (var i = 0; i < ehdr.e_phnum.num(); i++)
@@ -110,7 +104,6 @@ function load_elf_binary(file) {
 		const phdr = elf.getphdr(i);
 		if (phdr.p_type.num() !== PT_LOAD || phdr.p_filesz.num() === 0)
 		{
-
 			continue;
 		}
 
@@ -118,7 +111,17 @@ function load_elf_binary(file) {
 		const seg_end = seg_start + phdr.p_filesz.num();
 		const seg_data = new Uint8Array(file.slice(seg_start, seg_end));
 
+		// Map memory for ELF file
+		const seg_size = phdr.p_memsz.num();
+		const mem_start = Math.floor(phdr.p_vaddr.num() / (4 * 1024)) * (4 * 1024);
+		const mem_end = Math.ceil((phdr.p_vaddr.num() + seg_size) / (4 * 1024)) * (4 * 1024);
+		const mem_diff = mem_end - mem_start;
+		document_log("[MMAP range]: " + mem_start.toString(16) + " " + mem_end.toString(16))
+
+		unicorn.mem_map(mem_start, mem_diff, uc.PROT_ALL);
+
 		unicorn.mem_write(phdr.p_vaddr.num(), seg_data);
+
 	}
 
 	return elf_entry
@@ -190,12 +193,12 @@ function start_thread(elf_entry) {
 function execve(file)
 {
 	const elf_entry = load_elf_binary(file);
-	start_thread(elf_entry);
+	start_thread64(elf_entry);
 }
 
 function elf_loader()
 {
-	const file_name = "data/test";
+	const file_name = "data/hello";
 
 	fetch(file_name)
 		.then(response => response.arrayBuffer())
