@@ -49,9 +49,17 @@ function reg_log(unicorn)
 	document_log("[INFO]: reg_log[rip]: " + rip + " Hex: " + rip.hex());
 }
 
-function hook_syscall(handle, intno) {
-	console.log("syscall " + intno)
-    alert("syscall " + intno);
+function hook_syscall(handle) {
+    var rax = handle.reg_read_i64(uc.X86_REG_RAX);
+	var rdi = handle.reg_read_i64(uc.X86_REG_RDI);
+	var rsi = handle.reg_read_i64(uc.X86_REG_RSI);
+	var rdx = handle.reg_read_i64(uc.X86_REG_RDX);
+    alert("Hello world from syscall " + rax.num() + " Please ok to continue");
+    if (rax.num() === 1) {
+		var buffer = handle.mem_read(rsi, rdx.num());
+		var string = new TextDecoder("utf-8").decode(buffer);
+		alert(string)
+	}
 }
 
 var unicorn = null;
@@ -148,16 +156,9 @@ function start_thread64(elf_entry) {
 	// Start emulation
 	// NOTE: starting from main directly (starting from entry point would fail, fix needed)
 	document_log("[INFO]: emulation started at 0x" + main_function_addr.toString(16) + ".")
-	var hook2 = unicorn.hook_add(uc.HOOK_INSN, hook_syscall, {}, 0x401669, 0x40167a, uc.X86_INS_SYSCALL);
-	console.log(hook2);
-	var hook1 = unicorn.hook_add(uc.HOOK_INTR, hook_syscall, {}, 0x401669, 0x40167a, uc.X86_INS_SYSCALL);
-	console.log(hook1);
-	var hook4 = unicorn.hook_add(uc.HOOK_MEM_FETCH, hook_syscall, {}, 0x401669, 0x40167a, uc.X86_INS_SYSCALL);
-	console.log(hook4);
-	var hook3 = unicorn.hook_add(uc.HOOK_CODE, hook_syscall, {}, 1, 0, uc.X86_INS_SYSCALL);
-	console.log(hook3);
-	unicorn.emu_start(main_function_addr, 0x401369 , 0, 0);
-	unicorn.emu_start(0x401669, 0x40167a , 0, 50000);
+	unicorn.hook_add(uc.HOOK_INSN, hook_syscall, {}, 1, 0, uc.X86_INS_SYSCALL);
+	unicorn.emu_start(elf_entry, main_function_addr+program_size , 0, 0);
+	//unicorn.emu_start(0x401669, 0x40167a , 0, 50000);
 	document_log("[INFO]: emulation finished at 0x" +
 		(main_function_addr + program_size - 1).toString(16) + ".")
 	mem_log(unicorn, 0xffffdf16, 10)
@@ -184,7 +185,7 @@ function start_thread(elf_entry) {
 	mem_log(unicorn, main_function_addr, 10)
 
 	// Write register values
-	unicorn.reg_write_i32(uc.X86_REG_EAX, 123);
+	unicorn.reg_write_i32(uc.X86_REG_EAX, 22);
 	unicorn.reg_write_i32(uc.X86_REG_EBX, 456);
 
 	// Log register values
@@ -193,16 +194,13 @@ function start_thread(elf_entry) {
 	// Start emulation
 	// NOTE: starting from main directly (starting from entry point would fail, fix needed)
 	document_log("[INFO]: emulation started at 0x" + main_function_addr.toString(16) + ".")
-	var hook2 = unicorn.hook_add(uc.HOOK_INSN, hook_syscall, {}, 0x80712d0, 0x80712d3, uc.X86_INS_SYSCALL);
+	var hook2 = unicorn.hook_add(uc.HOOK_INSN, hook_syscall, {}, 1, 0, uc.X86_INS_INT);
 	console.log(hook2);
-	var hook1 = unicorn.hook_add(uc.HOOK_INTR, hook_syscall, {}, 0x80712d0, 0x80712d3, uc.X86_INS_SYSCALL);
-	console.log(hook1);
-	var hook4 = unicorn.hook_add(uc.HOOK_MEM_FETCH, hook_syscall, {}, 0x80712d0, 0x80712d3, uc.X86_INS_SYSCALL);
-	console.log(hook4);
-	var hook3 = unicorn.hook_add(uc.HOOK_CODE, hook_syscall, {}, 0x80712d0, 0x80712d3, uc.X86_INS_SYSCALL);
-	console.log(hook3);
+	//var hook1 = unicorn.hook_add(uc.HOOK_INTR, hook_syscall, {}, 1, 0);
+	//console.log(hook1);
 	mem_log(unicorn, 0x080712d0, 10)
-	unicorn.emu_start(main_function_addr, main_function_addr + program_size, 0, 0);
+	unicorn.emu_start(0x80712d0, 0x80712d2, 0, 0);
+	//unicorn.emu_start(main_function_addr, main_function_addr + program_size, 0, 0);
 	document_log("[INFO]: emulation finished at 0x" +
 		(main_function_addr + program_size - 1).toString(16) + ".")
 
@@ -213,12 +211,12 @@ function start_thread(elf_entry) {
 function execve(file)
 {
 	const elf_entry = load_elf_binary(file);
-	start_thread(elf_entry);
+	start_thread64(elf_entry);
 }
 
 function elf_loader()
 {
-	const file_name = "data/test";
+	const file_name = "data/hello";
 
 	fetch(file_name)
 		.then(response => response.arrayBuffer())
