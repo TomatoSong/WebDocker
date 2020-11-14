@@ -152,11 +152,9 @@ function execve(file)
 	start_thread64(elf_entry);
 }
 
-function elf_loader()
+function elf_loader(file_dictionary)
 {
-	const file_name = "data/hello";
+	const file_name = "hello"; // TODO: read meta data for this later
 
-	fetch(file_name)
-		.then(response => response.arrayBuffer())
-		.then(file => execve(file))//.catch(() => {alert("error! core dumped"); reg_log(unicorn)});
+	execve(file_dictionary[file_name].buffer)
 }

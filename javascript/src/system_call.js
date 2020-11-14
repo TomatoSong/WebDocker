@@ -4,7 +4,7 @@ function hook_system_call(unicorn)
 
 	if (!system_call_dictionary[rax.num()])
 	{
-		term.writeln("ERROR: Nonexistent system call.")
+		term.writeln("ERROR: Unimplemented system call: " + rax.num() + ".")
 		return
 	}
 
