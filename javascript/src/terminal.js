@@ -19,7 +19,6 @@ function terminal() {
     };
 
     term.writeln('Welcome to WebDocker!');
-    term.writeln('');
     term.prompt();
 
     buffer = '';

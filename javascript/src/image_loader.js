@@ -1,21 +1,7 @@
-function hook_syscall(unicorn)
-{
-    var rax = unicorn.reg_read_i64(uc.X86_REG_RAX);
-
-	term.write("Hello world from syscall " + rax.num() + " Please ok to continue\n");
-
-	if (!system_call_dictionary[rax.num()])
-	{
-		term.write("ERROR: Nonexistent system call.\n")
-		return
-	}
-
-	system_call_dictionary[rax.num()](unicorn)
-}
-
 var unicorn = null;
 
-function load_elf_binary(file) {
+function load_elf_binary(file)
+{
 	// Create ELF file object
 	var elf = new Elf(file);
 
@@ -107,7 +93,8 @@ function start_thread64(elf_entry) {
 	// Start emulation
 	// NOTE: starting from main directly (starting from entry point would fail, fix needed)
 	document_log("[INFO]: emulation started at 0x" + main_function_addr.toString(16) + ".")
-	unicorn.hook_add(uc.HOOK_INSN, hook_syscall, {}, 1, 0, uc.X86_INS_SYSCALL);
+	unicorn.hook_add(uc.HOOK_INSN, hook_system_call, {}, 1, 0, uc.X86_INS_SYSCALL);
+	term.writeln("")
 	unicorn.emu_start(elf_entry, main_function_addr+program_size , 0, 0);
 	//unicorn.emu_start(0x401669, 0x40167a , 0, 50000);
 	document_log("[INFO]: emulation finished at 0x" +
