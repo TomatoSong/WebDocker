@@ -13,7 +13,7 @@ function tutorial_elf_worker(file)
 	var ehdr = elf.getehdr();
 
 	// Write to document
-	document.getElementById("ehdr").innerHTML = JSON.stringify(ehdr);
+	document.getElementById("elf_loader").innerHTML = JSON.stringify(ehdr);
 }
 
 function tutorial_elf()
