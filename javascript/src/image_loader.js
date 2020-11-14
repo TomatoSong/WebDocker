@@ -1,14 +1,16 @@
-function hook_syscall(handle) {
-    var rax = handle.reg_read_i64(uc.X86_REG_RAX);
-	var rdi = handle.reg_read_i64(uc.X86_REG_RDI);
-	var rsi = handle.reg_read_i64(uc.X86_REG_RSI);
-	var rdx = handle.reg_read_i64(uc.X86_REG_RDX);
-	term.write("Hello world from syscall " + rax.num() + " Please ok to continue");
-        if (rax.num() === 1) {
-		var buffer = handle.mem_read(rsi, rdx.num());
-		var string = new TextDecoder("utf-8").decode(buffer);
-		term.write(string);
+function hook_syscall(unicorn)
+{
+    var rax = unicorn.reg_read_i64(uc.X86_REG_RAX);
+
+	term.write("Hello world from syscall " + rax.num() + " Please ok to continue\n");
+
+	if (!system_call_dictionary[rax.num()])
+	{
+		term.write("ERROR: Nonexistent system call.\n")
+		return
 	}
+
+	system_call_dictionary[rax.num()](unicorn)
 }
 
 var unicorn = null;
@@ -109,7 +111,7 @@ function start_thread64(elf_entry) {
 	unicorn.emu_start(elf_entry, main_function_addr+program_size , 0, 0);
 	//unicorn.emu_start(0x401669, 0x40167a , 0, 50000);
 	document_log("[INFO]: emulation finished at 0x" +
-		(main_function_addr + program_size - 1).toString(16) + ".")
+				 (main_function_addr + program_size - 1).toString(16) + ".")
 	mem_log(unicorn, 0xffffdf16, 10)
 
 	// Log register values
@@ -151,7 +153,7 @@ function start_thread(elf_entry) {
 	unicorn.emu_start(0x80712d0, 0x80712d2, 0, 0);
 	//unicorn.emu_start(main_function_addr, main_function_addr + program_size, 0, 0);
 	document_log("[INFO]: emulation finished at 0x" +
-		(main_function_addr + program_size - 1).toString(16) + ".")
+				 (main_function_addr + program_size - 1).toString(16) + ".")
 
 	// Log register values
 	reg_log(unicorn);
