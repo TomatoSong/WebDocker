@@ -1,28 +1,25 @@
 async function open_image(image_name)
 {
-	// Opens Docker Hub `repo` repository.
+	// Opens Docker Hub repository
 	const repo = new Container.Repository('www.simonyu.net:5000', image_name);
 
-	// Set credentials
+	// Set repository credentials
 	repo.setCredentials("webdocker", "@Webdocker")
 
-	// Gets the tags for `repo`.
-	const tags = await repo.Tags;
+	// Get image
+	const image = await repo.Image('latest');;
 
-	// Gets the image `repo:latest`.
-	const image = await repo.Image('latest');
-
-	// Gets the manifest JSON for `repo:latest`.
-	const manifestJSON = await image.ManifestJSON;
-
-	// Gets the config digest and JSON.
+	// Get command
 	const config = await image.Config;
-	const configDigest = await config.digest;
-	const configJSON = await config.Gets;
+	const config_json = await config.JSON;
+	const config_json_config = await config_json.config;
+	const config_json_config_cmd = await config_json_config.Cmd;
+	const command = config_json_config_cmd[0]
 
-	// JSON the file system from tar.gz.
+	// Get layers
 	const layers = await image.Layers;
 
+	// Parse layers into dictionary
 	var file_dictionary = {};
 
 	for (var i = 0; i < layers.length; i++)
@@ -40,5 +37,5 @@ async function open_image(image_name)
 		);
 	}
 
-	return file_dictionary
+	return [command, file_dictionary]
 }

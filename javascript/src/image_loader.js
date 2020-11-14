@@ -152,9 +152,13 @@ function execve(file)
 	start_thread64(elf_entry);
 }
 
-function elf_loader(file_dictionary)
+function elf_loader(file_system)
 {
-	const file_name = "hello"; // TODO: read meta data for this later
+	const command = file_system[0];
+	const file_dictionary = file_system[1];
+
+	const command_array = command.split("/")
+	const file_name = command_array[command_array.length - 1]
 
 	execve(file_dictionary[file_name].buffer)
 }

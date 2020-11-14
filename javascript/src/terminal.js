@@ -62,7 +62,9 @@ function terminal()
 					}
 					else
 					{
-						open_image(buffer_array[1]).then(file_dictionary => elf_loader(file_dictionary))
+						open_image(buffer_array[1]).then(
+								file_system => elf_loader(file_system)
+						)
 					}
 				}
 				
