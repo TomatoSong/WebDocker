@@ -9,15 +9,15 @@ String.prototype.remove = function(idx) {
   return this.slice(0, idx - 1) + this.slice(idx);
 };
 
-function runFakeTerminal() {
+function run_terminal() {
     if (term._initialized) {
-      return;
+  		return;
     }
-  
+	
     term.prompt = () => {
-      term.write('\r\n$ ');
+		  term.write('\r\n$ ');
     };
-  
+
     term.writeln('Welcome to WebDocker!');
     term.writeln('');
     term.prompt();
@@ -101,4 +101,4 @@ function runFakeTerminal() {
     });
 }
 
-runFakeTerminal();
+// run_terminal();
