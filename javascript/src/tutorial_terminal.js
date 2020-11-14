@@ -1,6 +1,13 @@
 var term = new Terminal();
 term.open(document.getElementById('terminal'));
-term.write('Hello from \x1B[1;3;31mxterm.js\x1B[0m $ ')
+
+String.prototype.insert = function(idx, str) {
+  return this.slice(0, idx) + str + this.slice(idx);
+};
+
+String.prototype.remove = function(idx) {
+  return this.slice(0, idx - 1) + this.slice(idx);
+};
 
 function runFakeTerminal() {
     if (term._initialized) {
@@ -11,34 +18,87 @@ function runFakeTerminal() {
       term.write('\r\n$ ');
     };
   
-    term.writeln('Welcome to xterm.js');
-    term.writeln('This is a local terminal emulation, without a real terminal in the back-end.');
-    term.writeln('Type some keys and commands to play around.');
+    term.writeln('Welcome to WebDocker!');
     term.writeln('');
     term.prompt();
 
     buffer = '';
+    cursor = 0;
+    ignoreCode = [38, 40];
+    // 38 ArrowUp
+    // 40 ArrowDown
   
     term.onKey((e) => {
       const ev = e.domEvent;
       const printable = !ev.altKey && !ev.ctrlKey && !ev.metaKey;
-  
-      if (ev.keyCode === 13) {
-        term.prompt();
-        term.writeln('Command received: ' + buffer);
-        buffer = '';
-      } else if (ev.keyCode === 8) {
-       // Do not delete the prompt
-        if (term._core.buffer.x > 2) {
-          buffer = buffer.substr(0, buffer.length-1);
-          term.write('\b \b');
-        }
-      } else if (printable) {
-        buffer += e.key;
-        term.write(e.key);
+
+      if (ignoreCode.includes(ev.keyCode)){
+        console.log("ignored: " + ev.keyCode);
+        return;
+      }
+
+      if (!printable) {
+        console.log("none printable! " + ev.keyCode);
+        return;
+      }
+
+      switch (ev.keyCode) {
+        case 13: // enter
+          buffer = '';
+          cursor = 0;
+          term.prompt();
+          break;
+        case 8: // backspace
+          if (cursor > 0) {
+            buffer = buffer.remove(cursor);
+            term.write('\b\x1b[1P');
+            cursor --;
+          }
+          break;
+        case 37: // arrowLeft
+          console.log((cursor + 2) % term.cols);
+          if ((cursor + 2) >= term.cols && 
+              (cursor + 2) % term.cols == 0) {
+            console.log("move cursor up");
+            term.write(`\x1b[A`);
+            term.write(`\x1b[${term.cols}G`);
+          } else if (cursor > 0) {
+            term.write('\b');
+          } else {
+            return;
+          }
+          cursor --;
+          break;
+        case 39:  // arrowRight
+          if ((cursor + 2) % term.cols == 79) {
+            term.write("\r\n");
+          } else if (cursor < buffer.length){
+            term.write(`\x1b[1C`);
+          } else {
+            return;
+          }
+          cursor ++;
+          break;
+        default:
+          if (buffer.length == term._core.buffer._cols - 3 ||
+              (buffer.length > term.cols && 
+              (buffer.length + 2) % term.cols == 79)){
+              term.write(e.key);
+              buffer += e.key;
+              term.write("\r\n");
+          } else {
+            if (cursor < buffer.length){
+              term.write(`\x1b[1@`);
+              term.write(e.key);
+              buffer = buffer.insert(cursor, e.key);
+            } else {
+              term.write(e.key);
+              buffer += e.key;
+            }
+          }
+          cursor ++;
       }
     });
-  }
+}
 
-  runFakeTerminal();
-
+runFakeTerminal();
