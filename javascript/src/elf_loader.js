@@ -54,12 +54,11 @@ function hook_syscall(handle) {
 	var rdi = handle.reg_read_i64(uc.X86_REG_RDI);
 	var rsi = handle.reg_read_i64(uc.X86_REG_RSI);
 	var rdx = handle.reg_read_i64(uc.X86_REG_RDX);
-	alert("Hello world from syscall " + rax.num() + " Please ok to continue");
 	term.write("Hello world from syscall " + rax.num() + " Please ok to continue");
-    if (rax.num() === 1) {
+        if (rax.num() === 1) {
 		var buffer = handle.mem_read(rsi, rdx.num());
 		var string = new TextDecoder("utf-8").decode(buffer);
-		alert(string)
+		term.write(string);
 	}
 }
 
