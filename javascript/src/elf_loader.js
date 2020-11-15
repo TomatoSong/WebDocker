@@ -5,11 +5,63 @@ function set_up_stack(command)
 {
 	const stack_size = 8192;
 	const stack_addr = 0x800000000000 - stack_size;
+	var stack_pointer = 0x7fffffffff20; // TODO: magic number, replace with stack_addr
+	var argv_pointers = [];
 
 	// Map memory for stack
 	unicorn.mem_map(stack_addr, stack_size, uc.PROT_ALL);
-	unicorn.reg_write_i64(uc.X86_REG_RSP, 0x7fffffffff20);
 
+/*
+	// Set up stack
+	// Refer to stack layout: https://www.win.tue.nl/~aeb/linux/hh/stack-layout.html
+
+	// NULL pointer
+	stack_pointer -= 8;
+
+	// Program name
+	stack_pointer -= command[0].length;
+	unicorn.mem_write(stack_pointer, new ArrayBuffer(command[0]))
+
+	// Environment string
+	// Empty for now
+
+	// Argv strings
+	for (var i = 0; i < command.length; i++)
+	{
+		stack_pointer -= 1; // NULL termination of string
+		stack_pointer -= command[i].length;
+		unicorn.mem_write(stack_pointer, new ArrayBuffer(command[i]));
+
+		argv_pointers.push(stack_pointer);
+	}
+
+	// ELF Auxiliary Table
+	// Empty for now
+
+	// NULL that ends envp[]
+	stack_pointer -= 8;
+
+	// Environment pointers
+	// Empty for now
+
+	// NULL that ends argv[]
+	stack_pointer -= 8;
+
+	// Argv pointers
+	for (var i = 0; i < argv_pointers.length, i ++)
+	{
+		stack_pointer -= 8;
+		unicorn.mem_write(stack_pointer, new ArrayBuffer(argv_pointers[i]));
+	}
+
+	// Argc
+	stack_pointer -= 4;
+	unicorn.mem_write(stack_pointer, new ArrayBuffer(command.length))
+*/
+
+	// Set stack pointer
+	unicorn.reg_write_i64(uc.X86_REG_RSP, stack_pointer);
+	
 	// Log
 	mem_log(unicorn, stack_addr, 10)
 }
