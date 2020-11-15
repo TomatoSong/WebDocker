@@ -1,6 +1,9 @@
 var term = new Terminal();
+var fit_addon = new FitAddon.FitAddon();
 
-term.open(document.getElementById('terminal'));
+term.loadAddon(fit_addon);
+term.open(document.getElementById("container_terminal"));
+fit_addon.fit();
 
 String.prototype.insert = function(idx, str)
 {
@@ -38,13 +41,11 @@ function terminal()
 
 		if (ignoreCode.includes(ev.keyCode))
 		{
-			console.log("ignored: " + ev.keyCode);
 			return;
 		}
 
 		if (!printable)
 		{
-			console.log("none printable! " + ev.keyCode);
 			return;
 		}
 
@@ -108,12 +109,9 @@ function terminal()
 			}
 			case 37: // arrow left
 			{
-				console.log((cursor + 2) % term.cols);
-
 				if ((cursor + 2) >= term.cols && 
 					(cursor + 2) % term.cols == 0)
 				{
-					console.log("move cursor up");
 					term.write(`\x1b[A`);
 					term.write(`\x1b[${term.cols}G`);
 				}

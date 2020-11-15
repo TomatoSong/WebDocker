@@ -2,23 +2,24 @@
   <head>
 	<style>
 	  @import url("css/webdocker.css");
+	  @import url("css/xterm.css");
 	</style>
 
-	<link rel="stylesheet" href="css/xterm.css" />
     <script src="javascript/lib/unicorn.min.js"></script>
     <script src="javascript/lib/libelf.min.js"></script>
 	<script src="javascript/lib/container.js"></script>
 	<script src="javascript/lib/untar.js"></script>
 	<script src="javascript/lib/pako.min.js"></script>
 	<script src="javascript/lib/xterm.js"></script>
+	<script src="javascript/lib/xterm-addon-fit.js"></script>
   </head>
 
-  <body>
-	<div id="terminal"></div>
+  <body class="webdocker">
+	<div id="container_terminal"></div>
 
 	<h2>ELF Loader Console</h2>
 	<p>
-	  <span id="elf_loader">Waiting for execution...</span>
+	  <span id="elf_loader">Waiting for active session...</span>
 	</p>
   </body>
 
