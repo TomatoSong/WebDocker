@@ -73,12 +73,14 @@ function terminal()
 						}
 						else
 						{
-							var command = "";
+							var command = buffer_array.slice(3);
 
-							if (buffer_array[3])
-							{
-								command = buffer_array[3];
-							}
+							command[0] = command[0].replace(/"/g, "");
+							command[0] = command[0].replace(/'/g, "");
+							command[command.length - 1] = command[command.length - 1]
+								.replace(/"/g, "");
+							command[command.length - 1] = command[command.length - 1]
+								.replace(/'/g, "");
 							
 							open_image(buffer_array[2], command)
 								.then(file_system => elf_loader(file_system))

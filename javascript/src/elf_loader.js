@@ -39,7 +39,7 @@ function start_thread(elf_entry, elf_end)
 	reg_log(unicorn);
 }
 
-function execve(file)
+function execve(command, file)
 {
 	// Create ELF file object
 	elf = new Elf(file);
@@ -102,13 +102,13 @@ function elf_loader(file_system)
 	const path = file_system[0];
 	const command = file_system[1];
 	const file_dictionary = file_system[2];
-	var file_name = "";
+	var file_name = command[0];
 	var file_name_linked = "";
 	var link_name = "";
 
-	if(command[0] === "/")
+	if(file_name[0] === "/")
 	{
-		file_name = command.slice(1);
+		file_name = file_name.slice(1);
 	}
     else // Find in PATH variable
 	{
@@ -116,7 +116,7 @@ function elf_loader(file_system)
 
         for (var i = 0; i < path_array.length; i ++)
 		{
-			var search_name = (path_array[i] + "/" + command).slice(1);
+			var search_name = (path_array[i] + "/" + file_name).slice(1);
 	
 			if (file_dictionary[search_name])
 			{
@@ -146,5 +146,5 @@ function elf_loader(file_system)
 		return
 	}
 
-	execve(file_dictionary[file_name_linked].buffer)
+	execve(command, file_dictionary[file_name_linked].buffer)
 }

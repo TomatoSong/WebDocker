@@ -17,9 +17,9 @@ async function open_image(image_name, command)
 	const config_json_config_cmd = await config_json_config.Cmd;
 	const path = config_json_config_env[0];
 
-	if (command == "")
+	if (command.length == 0)
 	{
-		command = config_json_config_cmd[0];
+		command = config_json_config_cmd;
 	}
 
 	// Get layers
