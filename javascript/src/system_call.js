@@ -62,8 +62,18 @@ function brk(unicorn)
 	unicorn.reg_write_i64(uc.X86_REG_RAX, heap_addr);
 }
 
+function getpid(unicorn)
+{
+	unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
+}
+
 function arch_prctl(unicorn)
 {
+}
+
+function gettid(unicorn)
+{
+	unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
 }
 
 function set_tid_address(unicorn)
@@ -85,7 +95,9 @@ function exit_group(unicorn)
 var system_call_dictionary = {
 	1: write,
 	12: brk,
+	39: getpid,
 	158: arch_prctl,
+	186: gettid,
 	218: set_tid_address,
 	231: exit_group
 };
