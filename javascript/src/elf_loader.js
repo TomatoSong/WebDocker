@@ -97,8 +97,24 @@ function elf_loader(file_system)
 	const command = file_system[0];
 	const file_dictionary = file_system[1];
 
-	const command_array = command.split("/")
-	const file_name = command_array[command_array.length - 1]
+	if(command[0] === "/")
+	{
+		file_name = command.slice(1);
+	}
+        else //find in PATH variable
+	{
+		const PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin".split(":")
+                for (var i = 0; i < PATH.length; i++)
+		{
+			var search_name = PATH[i] + "/" + command;
+			search_name = search_name.slice(1);
+			if (file_dictionary[search_name])
+			{
+				file_name = search_name
+				break;
+			}
+		}
+	}
 
 	execve(file_dictionary[file_name].buffer)
 }
