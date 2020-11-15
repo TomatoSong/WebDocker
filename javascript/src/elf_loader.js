@@ -8,7 +8,7 @@ function set_up_stack(command)
 
 	// Map memory for stack
 	unicorn.mem_map(stack_addr, stack_size, uc.PROT_ALL);
-	unicorn.reg_write_i64(uc.X86_REG_RSP, 0xffffdf20);
+	unicorn.reg_write_i64(uc.X86_REG_RSP, 0x7fffffffff20);
 
 	// Log
 	mem_log(unicorn, stack_addr, 10)
