@@ -20,10 +20,12 @@ function terminal()
     }
 	
     term.prompt = () => {
-		term.write("\r\n$ ");
+		term.write("WebDocker$ ");
     };
 
     term.writeln("Welcome to WebDocker!");
+	term.writeln("Use docker run <image-name> to run a docker image.")
+	term.writeln("")
     term.prompt();
 
     buffer = "";
@@ -50,27 +52,46 @@ function terminal()
 		{
 			case 13: // enter
 			{
-				term.writeln("")
-
 				buffer_array = buffer.split(" ")
 
 				if (buffer_array[0] == "docker")
 				{
-					if (!buffer_array[1] || buffer_array[1] == "")
+					if (!buffer_array[1] || buffer_array[1] != "run")
 					{
-						term.writeln("ERROR: invalid docker image.")
+						term.writeln("")
+						term.writeln("ERROR: invalid docker command.")
+						term.prompt();
 					}
 					else
 					{
-						open_image(buffer_array[1]).then(
-								file_system => elf_loader(file_system)
-						)
+						if (!buffer_array[2] || buffer_array[2] == "")
+						{
+							term.writeln("")
+							term.writeln("ERROR: invalid docker image name.")
+							term.prompt();
+						}
+						else
+						{
+							open_image(buffer_array[2])
+								.then(file_system => elf_loader(file_system))
+								.then(() => term.prompt())
+						}
 					}
 				}
+				else if (buffer_array[0] == "")
+				{
+					term.writeln("")
+					term.prompt();
+				}
+				else
+				{
+					term.writeln("")
+					term.writeln("ERROR: " + buffer_array[0] + ": command not found.")
+					term.prompt();
+				}
 				
-			 	buffer = '';
+			 	buffer = "";
 				cursor = 0;
-				term.prompt();
 
 				break;
 			}

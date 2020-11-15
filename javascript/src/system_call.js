@@ -11,8 +11,7 @@ function hook_system_call(unicorn)
 	system_call_dictionary[rax.num()](unicorn)
 }
 
-// Terminal write
-function system_call_1(unicorn)
+function write(unicorn)
 {
 	var rsi = unicorn.reg_read_i64(uc.X86_REG_RSI);
 	var rdx = unicorn.reg_read_i64(uc.X86_REG_RDX);
@@ -30,4 +29,29 @@ function system_call_1(unicorn)
 	term.write(string_array[string_array.length - 1]);
 }
 
-var system_call_dictionary = {1 : system_call_1};
+function arch_prctl(unicorn)
+{
+}
+
+function set_tid_address(unicorn)
+{
+}
+
+function exit_group(unicorn)
+{
+	var rdi = unicorn.reg_read_i64(uc.X86_REG_RDI);
+
+	unicorn.emu_stop()
+
+	if (rdi.num() != 0)
+	{
+		term.writeln("WARN: program exit with code " + rdi.num() + ".");
+	}
+}
+
+var system_call_dictionary = {
+	1 : write,
+	158 : arch_prctl,
+	218 : set_tid_address,
+	231 : exit_group
+};
