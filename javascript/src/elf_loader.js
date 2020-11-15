@@ -102,6 +102,9 @@ function elf_loader(file_system)
 	const path = file_system[0];
 	const command = file_system[1];
 	const file_dictionary = file_system[2];
+	var file_name = "";
+	var file_name_linked = "";
+	var link_name = "";
 
 	if(command[0] === "/")
 	{
@@ -129,19 +132,19 @@ function elf_loader(file_system)
 		return
 	}
 
-	var link_name = file_dictionary[file_name].linkname
+	link_name = file_dictionary[file_name].linkname
 
 	while (link_name != "")
 	{
-		file_name = file_dictionary[link_name].name
+		file_name_linked = file_dictionary[link_name].name
 		link_name = file_dictionary[link_name].linkname
 	}
 
-	if (file_name == "")
+	if (file_name_linked == "")
 	{
-		throw "[ERROR]: invalid ELF file name.";
+		throw "[ERROR]: invalid linked ELF file name.";
 		return
 	}
 
-	execve(file_dictionary[file_name].buffer)
+	execve(file_dictionary[file_name_linked].buffer)
 }

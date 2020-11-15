@@ -27,7 +27,7 @@ function terminal()
     };
 
     term.writeln("Welcome to WebDocker!");
-	term.writeln("Use docker run <image> to run a docker image.")
+	term.writeln("Use docker run <image> <command> to run a docker image.")
 	term.writeln("")
     term.prompt();
 
@@ -73,7 +73,14 @@ function terminal()
 						}
 						else
 						{
-							open_image(buffer_array[2])
+							var command = "";
+
+							if (buffer_array[3])
+							{
+								command = buffer_array[3];
+							}
+							
+							open_image(buffer_array[2], command)
 								.then(file_system => elf_loader(file_system))
 								.then(() => term.prompt())
 						}

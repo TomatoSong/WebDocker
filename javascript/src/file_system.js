@@ -1,4 +1,4 @@
-async function open_image(image_name)
+async function open_image(image_name, command)
 {
 	// Opens Docker Hub repository
 	const repo = new Container.Repository('www.simonyu.net:5000', image_name);
@@ -16,7 +16,11 @@ async function open_image(image_name)
 	const config_json_config_env = await config_json_config.Env;
 	const config_json_config_cmd = await config_json_config.Cmd;
 	const path = config_json_config_env[0];
-	const command = config_json_config_cmd[0];
+
+	if (command == "")
+	{
+		command = config_json_config_cmd[0];
+	}
 
 	// Get layers
 	const layers = await image.Layers;
