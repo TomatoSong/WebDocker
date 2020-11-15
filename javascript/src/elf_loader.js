@@ -1,29 +1,32 @@
 var unicorn = null;
 var elf = null;
 
-function start_thread(elf_entry, elf_end)
+function set_up_stack(command)
 {
 	const stack_size = 8192;
-	const stack_data = new Uint8Array([1,2,3,4,5]);
 	const stack_addr = 0x7fffffffc000;
 
 	// Map memory for stack
 	unicorn.mem_map(stack_addr, stack_size, uc.PROT_ALL);
-	unicorn.mem_write(stack_addr, stack_data);
 	unicorn.reg_write_i64(uc.X86_REG_RSP, 0xffffdf20);
 
-	// Log memory values
-	mem_log(unicorn, elf_entry, 10)
+	// Log
 	mem_log(unicorn, stack_addr, 10)
+}
 
-	// Log register values
-	reg_log(unicorn);
+function start_thread(command, elf_entry, elf_end)
+{
+	// Set up stack
+	set_up_stack(command);
 
 	// Add system call hook
 	unicorn.hook_add(uc.HOOK_INSN, hook_system_call, {}, 1, 0, uc.X86_INS_SYSCALL);
 
+	// Log
+	mem_log(unicorn, elf_entry, 10)
+	reg_log(unicorn);
+
 	// Start emulation
-	term.writeln("")
 	document_log("[INFO]: emulation started at 0x" + elf_entry.toString(16) + ".")
 
 	try
@@ -35,7 +38,7 @@ function start_thread(elf_entry, elf_end)
 		document_log("[ERROR]: emulation failed.")
 	}
 
-	// Log memory and register values
+	// Log
 	reg_log(unicorn);
 }
 
@@ -94,7 +97,7 @@ function execve(command, file)
 		unicorn.mem_write(phdr.p_vaddr.num(), seg_data);
 	}
 
-	start_thread(elf_entry)
+	start_thread(command, elf_entry, elf_end)
 }
 
 function elf_loader(file_system)
@@ -134,16 +137,23 @@ function elf_loader(file_system)
 
 	link_name = file_dictionary[file_name].linkname
 
-	while (link_name != "")
+	if (link_name != "")
 	{
-		file_name_linked = file_dictionary[link_name].name
-		link_name = file_dictionary[link_name].linkname
-	}
+		while (link_name != "")
+		{
+			file_name_linked = file_dictionary[link_name].name
+			link_name = file_dictionary[link_name].linkname
+		}
 
-	if (file_name_linked == "")
+		if (file_name_linked == "")
+		{
+			throw "[ERROR]: invalid linked ELF file name.";
+			return
+		}
+	}
+	else
 	{
-		throw "[ERROR]: invalid linked ELF file name.";
-		return
+		file_name_linked = file_name;
 	}
 
 	execve(command, file_dictionary[file_name_linked].buffer)

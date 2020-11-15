@@ -53,13 +53,13 @@ function terminal()
 		{
 			case 13: // enter
 			{
+				term.writeln("")
 				buffer_array = buffer.split(" ")
 
 				if (buffer_array[0] == "docker")
 				{
 					if (!buffer_array[1] || buffer_array[1] != "run")
 					{
-						term.writeln("")
 						term.writeln("ERROR: invalid docker command.")
 						term.prompt();
 					}
@@ -67,7 +67,6 @@ function terminal()
 					{
 						if (!buffer_array[2] || buffer_array[2] == "")
 						{
-							term.writeln("")
 							term.writeln("ERROR: invalid docker image name.")
 							term.prompt();
 						}
@@ -75,13 +74,16 @@ function terminal()
 						{
 							var command = buffer_array.slice(3);
 
-							command[0] = command[0].replace(/"/g, "");
-							command[0] = command[0].replace(/'/g, "");
-							command[command.length - 1] = command[command.length - 1]
-								.replace(/"/g, "");
-							command[command.length - 1] = command[command.length - 1]
-								.replace(/'/g, "");
-							
+							if (command.length != 0)
+							{
+								command[0] = command[0].replace(/"/g, "");
+								command[0] = command[0].replace(/'/g, "");
+								command[command.length - 1] = command[
+									command.length - 1].replace(/"/g, "");
+								command[command.length - 1] = command[
+									command.length - 1].replace(/'/g, "");
+							}
+
 							open_image(buffer_array[2], command)
 								.then(file_system => elf_loader(file_system))
 								.then(() => term.prompt())
@@ -90,12 +92,10 @@ function terminal()
 				}
 				else if (buffer_array[0] == "")
 				{
-					term.writeln("")
 					term.prompt();
 				}
 				else
 				{
-					term.writeln("")
 					term.writeln("ERROR: " + buffer_array[0] + ": command not found.")
 					term.prompt();
 				}
