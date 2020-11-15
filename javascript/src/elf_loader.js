@@ -102,7 +102,7 @@ function elf_loader(file_system)
 	{
 		file_name = command.slice(1);
 	}
-    else //find in PATH variable
+    else // Find in PATH variable
 	{
 		var path_array = path.split("=")[1].split(":");
 
@@ -116,6 +116,26 @@ function elf_loader(file_system)
 				break;
 			}
 		}
+	}
+
+	if (file_name == "")
+	{
+		throw "[ERROR]: invalid ELF file name.";
+		return
+	}
+
+	var link_name = file_dictionary[file_name].linkname
+
+	while (link_name != "")
+	{
+		file_name = file_dictionary[link_name].name
+		link_name = file_dictionary[link_name].linkname
+	}
+
+	if (file_name == "")
+	{
+		throw "[ERROR]: invalid ELF file name.";
+		return
 	}
 
 	execve(file_dictionary[file_name].buffer)
