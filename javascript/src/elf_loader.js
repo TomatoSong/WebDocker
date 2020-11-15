@@ -94,20 +94,22 @@ function execve(file)
 
 function elf_loader(file_system)
 {
-	const command = file_system[0];
-	const file_dictionary = file_system[1];
+	const path = file_system[0];
+	const command = file_system[1];
+	const file_dictionary = file_system[2];
 
 	if(command[0] === "/")
 	{
 		file_name = command.slice(1);
 	}
-        else //find in PATH variable
+    else //find in PATH variable
 	{
-		const PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin".split(":")
-                for (var i = 0; i < PATH.length; i++)
+		var path_array = path.split("=")[1].split(":");
+
+        for (var i = 0; i < path_array.length; i ++)
 		{
-			var search_name = PATH[i] + "/" + command;
-			search_name = search_name.slice(1);
+			var search_name = (path_array[i] + "/" + command).slice(1);
+	
 			if (file_dictionary[search_name])
 			{
 				file_name = search_name

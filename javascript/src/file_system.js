@@ -9,12 +9,14 @@ async function open_image(image_name)
 	// Get image
 	const image = await repo.Image('latest');;
 
-	// Get command
+	// Get image config
 	const config = await image.Config;
 	const config_json = await config.JSON;
 	const config_json_config = await config_json.config;
+	const config_json_config_env = await config_json_config.Env;
 	const config_json_config_cmd = await config_json_config.Cmd;
-	const command = config_json_config_cmd[0]
+	const path = config_json_config_env[0];
+	const command = config_json_config_cmd[0];
 
 	// Get layers
 	const layers = await image.Layers;
@@ -37,5 +39,5 @@ async function open_image(image_name)
 		);
 	}
 
-	return [command, file_dictionary]
+	return [path, command, file_dictionary]
 }

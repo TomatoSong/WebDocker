@@ -53,6 +53,10 @@ function terminal()
 		{
 			case 13: // enter
 			{
+				// DEBUG
+				buffer = "docker run busybox"
+				// DEBUG
+
 				buffer_array = buffer.split(" ")
 
 				if (buffer_array[0] == "docker")
