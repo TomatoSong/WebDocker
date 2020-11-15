@@ -1,4 +1,5 @@
 var unicorn = null;
+var elf = null;
 
 function start_thread(elf_entry, elf_end)
 {
@@ -36,7 +37,7 @@ function start_thread(elf_entry, elf_end)
 function execve(file)
 {
 	// Create ELF file object
-	var elf = new Elf(file);
+	elf = new Elf(file);
 
 	// Check if file is ELF
 	if (elf.kind() !== "elf")
@@ -65,7 +66,6 @@ function execve(file)
 	// Write segments to memory
 	for (var i = 0; i < ehdr.e_phnum.num(); i++)
 	{
-		// NOTE: only loading PF_X segment (loading others would override it, fix needed)
 		const phdr = elf.getphdr(i);
 
 		if (phdr.p_type.num() !== PT_LOAD || phdr.p_filesz.num() === 0)

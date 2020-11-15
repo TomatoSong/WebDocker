@@ -1,3 +1,5 @@
+var heap_addr = 0;
+
 function hook_system_call(unicorn)
 {
     var rax = unicorn.reg_read_i64(uc.X86_REG_RAX);
@@ -29,6 +31,37 @@ function write(unicorn)
 	term.write(string_array[string_array.length - 1]);
 }
 
+function brk(unicorn)
+{
+	const rdi = unicorn.reg_read_i64(uc.X86_REG_RDI);
+	const elf_header = elf.getehdr();
+
+	if (heap_addr == 0)
+	{
+		for (var i = 0; i < elf_header.e_shnum.num(); i++)
+		{
+			const section = elf.getscn(i);
+			const section_header = elf.getshdr(section);
+			const section_name = elf.strptr(elf_header.e_shstrndx.num(),
+											section_header.sh_name.num());
+
+			if (section_name == ".data")
+			{
+				heap_addr = section_header.sh_addr.num() + section_header.sh_size.num();
+			}
+		}
+	}
+
+	if (rdi.num() < heap_addr)
+	{
+		unicorn.reg_write_i64(uc.X86_REG_RAX, heap_addr);
+		return;
+	}
+
+	heap_addr = rdi.num();
+	unicorn.reg_write_i64(uc.X86_REG_RAX, heap_addr);
+}
+
 function arch_prctl(unicorn)
 {
 }
@@ -51,6 +84,7 @@ function exit_group(unicorn)
 
 var system_call_dictionary = {
 	1: write,
+	12: brk,
 	158: arch_prctl,
 	218: set_tid_address,
 	231: exit_group
