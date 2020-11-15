@@ -50,8 +50,8 @@ function exit_group(unicorn)
 }
 
 var system_call_dictionary = {
-	1 : write,
-	158 : arch_prctl,
-	218 : set_tid_address,
-	231 : exit_group
+	1: write,
+	158: arch_prctl,
+	218: set_tid_address,
+	231: exit_group
 };
