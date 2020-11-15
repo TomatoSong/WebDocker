@@ -5,7 +5,7 @@ function start_thread(elf_entry, elf_end)
 {
 	const stack_size = 8192;
 	const stack_data = new Uint8Array([1,2,3,4,5]);
-	const stack_addr = 0xffffc000;
+	const stack_addr = 0x7fffffffc000;
 
 	// Map memory for stack
 	unicorn.mem_map(stack_addr, stack_size, uc.PROT_ALL);
@@ -14,9 +14,7 @@ function start_thread(elf_entry, elf_end)
 
 	// Log memory values
 	mem_log(unicorn, elf_entry, 10)
-	mem_log(unicorn, 0x403ff0, 10)
 	mem_log(unicorn, stack_addr, 10)
-	mem_log(unicorn, 0xffffdf16, 10)
 
 	// Log register values
 	reg_log(unicorn);
@@ -38,7 +36,6 @@ function start_thread(elf_entry, elf_end)
 	}
 
 	// Log memory and register values
-	mem_log(unicorn, 0xffffdf16, 10)
 	reg_log(unicorn);
 }
 
