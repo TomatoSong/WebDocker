@@ -14,7 +14,7 @@ function start_thread(elf_entry, elf_end)
 
 	// Log memory values
 	mem_log(unicorn, elf_entry, 10)
-	mem_log(unicorn, 0x403ff0, 10) // Why it is zero/unloaded?
+	mem_log(unicorn, 0x403ff0, 10)
 	mem_log(unicorn, stack_addr, 10)
 	mem_log(unicorn, 0xffffdf16, 10)
 
@@ -27,7 +27,15 @@ function start_thread(elf_entry, elf_end)
 	// Start emulation
 	term.writeln("")
 	document_log("[INFO]: emulation started at 0x" + elf_entry.toString(16) + ".")
-	unicorn.emu_start(elf_entry, elf_end , 0, 0);
+
+	try
+	{
+		unicorn.emu_start(elf_entry, elf_end , 0, 0);
+	}
+	catch (error)
+	{
+		document_log("[ERROR]: emulation failed.")
+	}
 
 	// Log memory and register values
 	mem_log(unicorn, 0xffffdf16, 10)
