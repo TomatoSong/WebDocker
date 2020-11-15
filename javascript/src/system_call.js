@@ -2,11 +2,11 @@ var heap_addr = 0;
 
 function hook_system_call(unicorn)
 {
-    var rax = unicorn.reg_read_i64(uc.X86_REG_RAX);
+    const rax = unicorn.reg_read_i64(uc.X86_REG_RAX);
 
 	if (!system_call_dictionary[rax.num()])
 	{
-		term.writeln("ERROR: Unimplemented system call: " + rax.num() + ".")
+		term.writeln("ERROR: missing system call: " + rax.num() + ".")
 		return
 	}
 
@@ -15,13 +15,12 @@ function hook_system_call(unicorn)
 
 function write(unicorn)
 {
-	var rsi = unicorn.reg_read_i64(uc.X86_REG_RSI);
-	var rdx = unicorn.reg_read_i64(uc.X86_REG_RDX);
+	const rsi = unicorn.reg_read_i64(uc.X86_REG_RSI);
+	const rdx = unicorn.reg_read_i64(uc.X86_REG_RDX);
 
-	var buffer = unicorn.mem_read(rsi, rdx.num());
-	var string = new TextDecoder("utf-8").decode(buffer);
-
-	var string_array = string.split("\n")
+	const buffer = unicorn.mem_read(rsi, rdx.num());
+	const string = new TextDecoder("utf-8").decode(buffer);
+	const string_array = string.split("\n")
 
 	for (var i = 0; i < string_array.length - 1; i ++)
 	{
@@ -67,6 +66,18 @@ function getpid(unicorn)
 	unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
 }
 
+function exit(unicorn)
+{
+	const rdi = unicorn.reg_read_i64(uc.X86_REG_RDI);
+
+	unicorn.emu_stop()
+
+	if (rdi.num() != 0)
+	{
+		term.writeln("WARN: program exit with code " + rdi.num() + ".");
+	}
+}
+
 function arch_prctl(unicorn)
 {
 }
@@ -82,20 +93,14 @@ function set_tid_address(unicorn)
 
 function exit_group(unicorn)
 {
-	var rdi = unicorn.reg_read_i64(uc.X86_REG_RDI);
-
-	unicorn.emu_stop()
-
-	if (rdi.num() != 0)
-	{
-		term.writeln("WARN: program exit with code " + rdi.num() + ".");
-	}
+	exit(unicorn);
 }
 
-var system_call_dictionary = {
+const system_call_dictionary = {
 	1: write,
 	12: brk,
 	39: getpid,
+	60: exit,
 	158: arch_prctl,
 	186: gettid,
 	218: set_tid_address,
