@@ -4,7 +4,7 @@ var elf = null;
 function set_up_stack(command)
 {
 	const stack_size = 8192;
-	const stack_addr = 0x7fffffffc000;
+	const stack_addr = 0x800000000000 - stack_size;
 
 	// Map memory for stack
 	unicorn.mem_map(stack_addr, stack_size, uc.PROT_ALL);
