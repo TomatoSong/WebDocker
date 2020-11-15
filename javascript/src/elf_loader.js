@@ -27,7 +27,6 @@ function start_thread(elf_entry, elf_end)
 	term.writeln("")
 	document_log("[INFO]: emulation started at 0x" + elf_entry.toString(16) + ".")
 	unicorn.emu_start(elf_entry, elf_end , 0, 0);
-	document_log("[INFO]: emulation finished at 0x" + (elf_end - 1).toString(16) + ".")
 
 	// Log memory and register values
 	mem_log(unicorn, 0xffffdf16, 10)
