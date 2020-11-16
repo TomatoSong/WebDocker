@@ -29,7 +29,7 @@ function terminal()
     };
 
     term.writeln("Welcome to WebDocker!");
-	term.writeln("Use docker run <image-name> to run a docker image.")
+	term.writeln("Use docker run <img> <cmd> to run a docker image.")
 	term.writeln("")
 	term.prompt();
 	
@@ -92,13 +92,13 @@ function terminal()
 					return;
 				}
 
+				term.writeln("")
 				buffer_array = buffer.split(" ")
 
 				if (buffer_array[0] == "docker")
 				{
 					if (!buffer_array[1] || buffer_array[1] != "run")
 					{
-						term.writeln("")
 						term.writeln("ERROR: invalid docker command.")
 						term.prompt();
 					}
@@ -106,28 +106,56 @@ function terminal()
 					{
 						if (!buffer_array[2] || buffer_array[2] == "")
 						{
-							term.writeln("")
 							term.writeln("ERROR: invalid docker image name.")
 							term.prompt();
 						}
 						else
 						{
-							open_image(buffer_array[2])
+							var command = buffer_array.slice(3);
+
+							if (command.length != 0)
+							{
+								command[0] = command[0].replace(/"/g, "");
+								command[0] = command[0].replace(/'/g, "");
+								command[command.length - 1] = command[
+									command.length - 1].replace(/"/g, "");
+								command[command.length - 1] = command[
+									command.length - 1].replace(/'/g, "");
+							}
+
+							open_image(buffer_array[2], command)
 								.then(file_system => elf_loader(file_system))
-								.then(() => term.prompt())
+								.then(() => term.prompt());
 						}
 					}
 				}
 				else if (buffer_array[0] == "")
 				{
-					term.writeln("")
 					term.prompt();
 				}
 				else
 				{
-					term.writeln("")
-					term.writeln("ERROR: " + buffer_array[0] + ": command not found.")
-					term.prompt();
+					var command = buffer_array;
+
+					if (command.length != 0)
+					{
+						command[0] = command[0].replace(/"/g, "");
+						command[0] = command[0].replace(/'/g, "");
+						command[command.length - 1] = command[
+							command.length - 1].replace(/"/g, "");
+						command[command.length - 1] = command[
+							command.length - 1].replace(/'/g, "");
+					}
+
+					fetch("bin/" + command[0])
+						.then(response => response.arrayBuffer())
+						.then(file => execve(command, file))
+						.then(() => term.prompt())
+						.catch(function() {
+							term.writeln("ERROR: " + buffer_array[0] +
+										 ": command not found.");
+							term.prompt();
+						});
 				}
 				
 			 	buffer = "";

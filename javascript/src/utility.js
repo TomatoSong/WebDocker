@@ -30,20 +30,12 @@ function mem_log(unicorn, address, size)
 function reg_log(unicorn)
 {
 	// Read register values
-	var eax = unicorn.reg_read_i32(uc.X86_REG_EAX);
 	var rax = unicorn.reg_read_i64(uc.X86_REG_RAX);
-	var ebx = unicorn.reg_read_i32(uc.X86_REG_EBX);
-	var esp = unicorn.reg_read_i32(uc.X86_REG_ESP);
-	var eip = unicorn.reg_read_i32(uc.X86_REG_EIP);
 	var rsp = unicorn.reg_read_i64(uc.X86_REG_RSP);
 	var rip = unicorn.reg_read_i64(uc.X86_REG_RIP);
 
 	// Print register values
-	document_log("[INFO]: reg_log[eax]: " + eax + " (uint), " + eax.hex() + " (hex)");
-	document_log("[INFO]: reg_log[rax]: " + rax + " (uint), " + rax.hex() + " (hex)");
-	document_log("[INFO]: reg_log[ebx]: " + ebx + " (uint), " + ebx.hex() + " (hex)");
-	document_log("[INFO]: reg_log[esp]: " + esp + " (uint), " + esp.hex() + " (hex)");
-	document_log("[INFO]: reg_log[eip]: " + eip + " (uint), " + eip.hex() + " (hex)");
-	document_log("[INFO]: reg_log[rsp]: " + rsp + " (uint), " + rsp.hex() + " (hex)");
-	document_log("[INFO]: reg_log[rip]: " + rip + " (uint), " + rip.hex() + " (hex)");
+	document_log("[INFO]: reg_log[rax]: " + rax.hex() + " (hex), " + rax + " (uint)");
+	document_log("[INFO]: reg_log[rsp]: " + rsp.hex() + " (hex), " + rsp + " (uint)");
+	document_log("[INFO]: reg_log[rip]: " + rip.hex() + " (hex), " + rip + " (uint)");
 }
