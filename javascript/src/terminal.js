@@ -15,6 +15,8 @@ String.prototype.remove = function(idx)
 	return this.slice(0, idx - 1) + this.slice(idx);
 };
 
+let source = "WebDocker$ ";
+
 function terminal()
 {
     if (term._initialized)
@@ -23,22 +25,40 @@ function terminal()
     }
 	
     term.prompt = () => {
-		term.write("WebDocker$ ");
+		term.write(source);
     };
 
     term.writeln("Welcome to WebDocker!");
 	term.writeln("Use docker run <image-name> to run a docker image.")
 	term.writeln("")
-    term.prompt();
+	term.prompt();
+	
 
     buffer = "";
     cursor = 0;
     ignoreCode = [38, 40]; // 38: arrow up, 40: arrow down
 	
+	// term.write(`\x1b[?7h`);
     term.onKey((e) => {
 		const ev = e.domEvent;
 		const printable = !ev.altKey && !ev.ctrlKey && !ev.metaKey;
 
+		if (ev.ctrlKey && ev.keyCode == 67) // Crtl-C
+		{ 
+			console.log("Control sequence: Crtl-C");
+			return;
+		}
+		else if (ev.ctrlKey && ev.keyCode == 90)
+		{ 
+			console.log("Control sequence: Crtl-Z");
+			return;
+		}
+		else if (ev.ctrlKey && ev.keyCode == 220)
+		{ 
+			console.log("Control sequence: Crtl-\\");
+			return;
+		}
+			
 		if (ignoreCode.includes(ev.keyCode))
 		{
 			return;
@@ -53,6 +73,25 @@ function terminal()
 		{
 			case 13: // enter
 			{
+				if (buffer === "fg")
+				{
+					console.log("fg");
+					buffer = "";
+					cursor = 0;
+					term.write("\r\n");
+					term.prompt();
+					return;
+				}
+				else if (buffer === "jobs")
+				{
+					console.log("jobs");
+					buffer = "";
+					cursor = 0;
+					term.write("\r\n");
+					term.prompt();
+					return;
+				}
+
 				buffer_array = buffer.split(" ")
 
 				if (buffer_array[0] == "docker")
@@ -109,8 +148,8 @@ function terminal()
 			}
 			case 37: // arrow left
 			{
-				if ((cursor + 2) >= term.cols && 
-					(cursor + 2) % term.cols == 0)
+				if ((cursor + source.length) >= term.cols && 
+					(cursor + source.length) % term.cols == 0)
 				{
 					term.write(`\x1b[A`);
 					term.write(`\x1b[${term.cols}G`);
@@ -130,7 +169,7 @@ function terminal()
 			}
 			case 39: // arrow right
 			{
-				if ((cursor + 2) % term.cols == 79)
+				if ((cursor + source.length) % term.cols == term.cols - 1)
 				{
 					term.write("\r\n");
 				}
@@ -149,21 +188,12 @@ function terminal()
 			}
 			default:
 			{
-				if (buffer.length == term._core.buffer._cols - 3 ||
-					(buffer.length > term.cols && 
-					 (buffer.length + 2) % term.cols == 79))
-				{
-					term.write(e.key);
-					buffer += e.key;
-					term.write("\r\n");
-				}
-				else
-				{
-					if (cursor < buffer.length)
+				if (cursor == buffer.length){
+					if ((buffer.length + source.length) % term.cols == term.cols - 1)
 					{
-						term.write(`\x1b[1@`);
 						term.write(e.key);
-						buffer = buffer.insert(cursor, e.key);
+						buffer += e.key;
+						term.write("\r\n");
 					}
 					else
 					{
@@ -171,8 +201,27 @@ function terminal()
 						buffer += e.key;
 					}
 				}
+				else if (cursor < buffer.length)
+				{
+					// let id = cursor;
+					// while (id < buffer.length) 
+					// {
+					// 	if (id + source.length < term.cols)
+					// 	{
+							
+					// 	}
+					// }
+					term.write(`\x1b[1@`);
+					term.write(e.key);
+					buffer = buffer.insert(cursor, e.key);
+				}
+				else
+				{
+					return;
+				}
 
 				cursor ++;
+
 			}
 		}
     });
