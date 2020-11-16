@@ -27,7 +27,8 @@ function terminal()
     };
 
     term.writeln("Welcome to WebDocker!");
-	term.writeln("Use docker run <image> <command> to run a docker image.")
+	term.writeln("Use docker run <img> <cmd> to run a docker image.")
+	term.writeln("Use ./<bin> <args> to run a binary directly.")
 	term.writeln("")
     term.prompt();
 
@@ -86,9 +87,33 @@ function terminal()
 
 							open_image(buffer_array[2], command)
 								.then(file_system => elf_loader(file_system))
-								.then(() => term.prompt())
+								.then(() => term.prompt());
 						}
 					}
+				}
+				else if (buffer_array[0].substring(0, 2) == "./")
+				{
+					var command = buffer_array;
+
+					if (command.length != 0)
+					{
+						command[0] = command[0].replace(/"/g, "");
+						command[0] = command[0].replace(/'/g, "");
+						command[command.length - 1] = command[
+							command.length - 1].replace(/"/g, "");
+						command[command.length - 1] = command[
+							command.length - 1].replace(/'/g, "");
+					}
+
+					fetch(buffer_array[0].substring(2))
+						.then(response => response.arrayBuffer())
+						.then(file => execve(command, file))
+						.then(() => term.prompt())
+						.catch(function() {
+							term.writeln("ERROR: " + buffer_array[0] +
+										 ": command not found.");
+							term.prompt();
+						});
 				}
 				else if (buffer_array[0] == "")
 				{
@@ -96,7 +121,7 @@ function terminal()
 				}
 				else
 				{
-					term.writeln("ERROR: " + buffer_array[0] + ": command not found.")
+					term.writeln("ERROR: " + buffer_array[0] + ": command not found.");
 					term.prompt();
 				}
 				

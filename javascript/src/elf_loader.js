@@ -25,7 +25,7 @@ function set_up_stack(command)
 	// Empty for now
 
 	// Argv strings
-	for (var i = 0; i < command.length; i++)
+	for (var i = 0; i < command.length; i ++)
 	{
 		stack_pointer -= 1; // NULL termination of string
 		stack_pointer -= command[i].length;
@@ -122,7 +122,7 @@ function execve(command, file)
 	const elf_end = file.byteLength;
 
 	// Write segments to memory
-	for (var i = 0; i < ehdr.e_phnum.num(); i++)
+	for (var i = 0; i < ehdr.e_phnum.num(); i ++)
 	{
 		const phdr = elf.getphdr(i);
 
