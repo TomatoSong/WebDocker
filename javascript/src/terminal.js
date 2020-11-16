@@ -31,40 +31,60 @@ function terminal()
     term.writeln("Welcome to WebDocker!");
 	term.writeln("Use docker run <img> <cmd> to run a docker image.")
 	term.writeln("")
-	term.prompt();
-	
+	term.prompt();	
 
     buffer = "";
     cursor = 0;
     ignoreCode = [38, 40]; // 38: arrow up, 40: arrow down
-	
-	// term.write(`\x1b[?7h`);
+
     term.onKey((e) => {
 		const ev = e.domEvent;
 		const printable = !ev.altKey && !ev.ctrlKey && !ev.metaKey;
 
-		if (ev.ctrlKey && ev.keyCode == 67) // Crtl-C
-		{ 
-			console.log("Control sequence: Crtl-C");
-			return;
-		}
-		else if (ev.ctrlKey && ev.keyCode == 90)
-		{ 
-			console.log("Control sequence: Crtl-Z");
-			return;
-		}
-		else if (ev.ctrlKey && ev.keyCode == 220)
-		{ 
-			console.log("Control sequence: Crtl-\\");
-			return;
-		}
-			
-		if (ignoreCode.includes(ev.keyCode))
+		if (ev.ctrlKey)
 		{
+			switch (ev.keyCode)
+			{
+				case 67: // Ctrl+C
+				{
+					term.writeln("")
+					term.writeln("INFO: received signal: \"Ctrl+C\".")
+					term.prompt();
+					buffer = "";
+					cursor = 0;
+
+					break;
+				}
+				case 90: // Ctrl+Z
+				{
+					term.writeln("")
+					term.writeln("INFO: received signal: \"Ctrl+Z\".")
+					term.prompt();
+					buffer = "";
+					cursor = 0;
+
+					break;
+				}
+				case 220: // Ctrl+\
+				{
+					term.writeln("")
+					term.writeln("INFO: received signal: \"Ctrl+\\\".")
+					term.prompt();
+					buffer = "";
+					cursor = 0;
+
+					break;
+				}
+				default:
+				{
+					break;
+				}
+			}
+
 			return;
 		}
 
-		if (!printable)
+		if (ignoreCode.includes(ev.keyCode) || !printable)
 		{
 			return;
 		}
@@ -73,29 +93,20 @@ function terminal()
 		{
 			case 13: // enter
 			{
-				if (buffer === "fg")
-				{
-					console.log("fg");
-					buffer = "";
-					cursor = 0;
-					term.write("\r\n");
-					term.prompt();
-					return;
-				}
-				else if (buffer === "jobs")
-				{
-					console.log("jobs");
-					buffer = "";
-					cursor = 0;
-					term.write("\r\n");
-					term.prompt();
-					return;
-				}
-
 				term.writeln("")
 				buffer_array = buffer.split(" ")
 
-				if (buffer_array[0] == "docker")
+				if (buffer === "fg")
+				{
+					term.writeln("INFO: received command: \"fg\".")
+					term.prompt();
+				}
+				else if (buffer === "jobs")
+				{
+					term.writeln("INFO: received command: \"jobs\".")
+					term.prompt();
+				}
+				else if (buffer_array[0] == "docker")
 				{
 					if (!buffer_array[1] || buffer_array[1] != "run")
 					{
@@ -216,7 +227,8 @@ function terminal()
 			}
 			default:
 			{
-				if (cursor == buffer.length){
+				if (cursor == buffer.length)
+				{
 					if ((buffer.length + source.length) % term.cols == term.cols - 1)
 					{
 						term.write(e.key);
@@ -231,14 +243,6 @@ function terminal()
 				}
 				else if (cursor < buffer.length)
 				{
-					// let id = cursor;
-					// while (id < buffer.length) 
-					// {
-					// 	if (id + source.length < term.cols)
-					// 	{
-							
-					// 	}
-					// }
 					term.write(`\x1b[1@`);
 					term.write(e.key);
 					buffer = buffer.insert(cursor, e.key);
@@ -250,6 +254,7 @@ function terminal()
 
 				cursor ++;
 
+				break;
 			}
 		}
     });
