@@ -102,14 +102,13 @@ function terminal()
 					{
 						command[0] = command[0].replace(/"/g, "");
 						command[0] = command[0].replace(/'/g, "");
-						command[0] = command[0].replace(/\//g, "");
 						command[command.length - 1] = command[
 							command.length - 1].replace(/"/g, "");
 						command[command.length - 1] = command[
 							command.length - 1].replace(/'/g, "");
 					}
 
-					fetch(command[0])
+					fetch("bin/" + command[0])
 						.then(response => response.arrayBuffer())
 						.then(file => execve(command, file))
 						.then(() => term.prompt())
