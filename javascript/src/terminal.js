@@ -28,7 +28,6 @@ function terminal()
 
     term.writeln("Welcome to WebDocker!");
 	term.writeln("Use docker run <img> <cmd> to run a docker image.")
-	term.writeln("Use ./<bin> <args> to run a binary directly.")
 	term.writeln("")
     term.prompt();
 
@@ -91,7 +90,11 @@ function terminal()
 						}
 					}
 				}
-				else if (buffer_array[0].substring(0, 2) == "./")
+				else if (buffer_array[0] == "")
+				{
+					term.prompt();
+				}
+				else
 				{
 					var command = buffer_array;
 
@@ -99,13 +102,14 @@ function terminal()
 					{
 						command[0] = command[0].replace(/"/g, "");
 						command[0] = command[0].replace(/'/g, "");
+						command[0] = command[0].replace(/\//g, "");
 						command[command.length - 1] = command[
 							command.length - 1].replace(/"/g, "");
 						command[command.length - 1] = command[
 							command.length - 1].replace(/'/g, "");
 					}
 
-					fetch(buffer_array[0].substring(2))
+					fetch(command[0])
 						.then(response => response.arrayBuffer())
 						.then(file => execve(command, file))
 						.then(() => term.prompt())
@@ -114,15 +118,6 @@ function terminal()
 										 ": command not found.");
 							term.prompt();
 						});
-				}
-				else if (buffer_array[0] == "")
-				{
-					term.prompt();
-				}
-				else
-				{
-					term.writeln("ERROR: " + buffer_array[0] + ": command not found.");
-					term.prompt();
 				}
 				
 			 	buffer = "";
