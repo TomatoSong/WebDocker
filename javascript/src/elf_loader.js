@@ -19,7 +19,7 @@ function set_up_stack(command)
 
 	// Program name
 	stack_pointer -= command[0].length;
-	unicorn.mem_write(stack_pointer, new TextEncoder().encode(command[0]));
+	unicorn.mem_write(stack_pointer, new TextEncoder("utf-8").encode(command[0]));
 
 	// Environment string
 	// Empty for now
@@ -29,7 +29,7 @@ function set_up_stack(command)
 	{
 		stack_pointer -= 1; // NULL termination of string
 		stack_pointer -= command[i].length;
-		unicorn.mem_write(stack_pointer, new TextEncoder().encode(command[i]));
+		unicorn.mem_write(stack_pointer, new TextEncoder("utf-8").encode(command[i]));
 
 		argv_pointers.push(stack_pointer);
 	}
@@ -51,12 +51,15 @@ function set_up_stack(command)
 	for (var i = 0; i < argv_pointers.length; i ++)
 	{
 		stack_pointer -= 8;
-		unicorn.mem_write(stack_pointer, new ElfUInt64(argv_pointers[i]).chunks);
+		unicorn.mem_write(stack_pointer, new Uint8Array([0x0f,0xff,0xff,0xff,0xff,0x7f,0,0]));
 	}
+	console.log(stack_pointer.toString(16))
 
 	// Argc (which is 64 bit)
 	stack_pointer -= 8;
-	unicorn.mem_write(stack_pointer, new ElfUInt64(command.length).chunks);
+	unicorn.mem_write(stack_pointer, new Uint8Array([1,0,0,0,0,0,0,0]));
+	mem_log(unicorn, argv_pointers[0], 20)
+	mem_log(unicorn, stack_pointer, 20)
 
 	// Set stack pointer
 	unicorn.reg_write_i64(uc.X86_REG_RSP, stack_pointer);
