@@ -51,14 +51,13 @@ function set_up_stack(command)
 	for (var i = 0; i < argv_pointers.length; i ++)
 	{
 		stack_pointer -= 8;
-		unicorn.mem_write(stack_pointer, new Uint8Array([0x0f,0xff,0xff,0xff,0xff,0x7f,0,0]));
+		unicorn.mem_write(stack_pointer, new Uint8Array(new ElfUInt64(argv_pointers[i]).chunks.buffer));
 	}
-	console.log(stack_pointer.toString(16))
 
 	// Argc (which is 64 bit)
 	stack_pointer -= 8;
-	unicorn.mem_write(stack_pointer, new Uint8Array([1,0,0,0,0,0,0,0]));
-	mem_log(unicorn, argv_pointers[0], 20)
+	unicorn.mem_write(stack_pointer, new Uint8Array(new ElfUInt64(argv_pointers.length).chunks.buffer));
+	
 	mem_log(unicorn, stack_pointer, 20)
 
 	// Set stack pointer
