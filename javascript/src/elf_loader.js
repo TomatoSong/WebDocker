@@ -35,7 +35,8 @@ function set_up_stack(command)
 	}
 
 	// ELF Auxiliary Table
-	// Empty for now
+	// Empty for now, put NULL
+	stack_pointer -= 8;
 
 	// NULL that ends envp[]
 	stack_pointer -= 8;
