@@ -19,7 +19,7 @@ function set_up_stack(command)
 
 	// Program name
 	stack_pointer -= command[0].length;
-	unicorn.mem_write(stack_pointer, new ArrayBuffer(command[0]));
+	unicorn.mem_write(stack_pointer, new TextEncoder().encode(command[0]));
 
 	// Environment string
 	// Empty for now
@@ -29,7 +29,7 @@ function set_up_stack(command)
 	{
 		stack_pointer -= 1; // NULL termination of string
 		stack_pointer -= command[i].length;
-		unicorn.mem_write(stack_pointer, new ArrayBuffer(command[i]));
+		unicorn.mem_write(stack_pointer, new TextEncoder().encode(command[i]));
 
 		argv_pointers.push(stack_pointer);
 	}
