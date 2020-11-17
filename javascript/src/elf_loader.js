@@ -5,7 +5,7 @@ function set_up_stack(command)
 {
 	const stack_size = 8192;
 	const stack_addr = 0x800000000000 - stack_size;
-	var stack_pointer = 0x7fffffffff20; // TODO: magic number
+	var stack_pointer = stack_addr + stack_size;
 	var argv_pointers = [];
 
 	// Map memory for stack
