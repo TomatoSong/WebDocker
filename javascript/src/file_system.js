@@ -1,13 +1,18 @@
 async function open_image(image_name, command)
 {
 	// Opens Docker Hub repository
-	const repo = new Container.Repository('www.simonyu.net:5000', image_name);
+	const repo = new Container.Repository('www.simonyu.net:5000', image_name.split(":")[0]);
 
 	// Set repository credentials
 	repo.setCredentials("webdocker", "@Webdocker")
 
 	// Get image
-	const image = await repo.Image('latest');;
+	var tag = "latest:
+	if (image_name.split(":")[0])
+	{
+		tag = image_name.split(":")[0];
+	}
+	const image = await repo.Image(tag);
 
 	// Get image config
 	const config = await image.Config;
