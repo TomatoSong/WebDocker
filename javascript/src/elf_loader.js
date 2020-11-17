@@ -88,7 +88,7 @@ function start_thread(command, elf_entry, elf_end)
 	}
 	catch (error)
 	{
-		document_log("[ERROR]: emulation failed.")
+		document_log("[ERROR]: emulation failed: " + error + ".")
 	}
 
 	// Log
