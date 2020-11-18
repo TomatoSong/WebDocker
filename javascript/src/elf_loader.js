@@ -1,6 +1,8 @@
 var unicorn = null;
 var elf = null;
 
+var data_end = 0;
+
 function set_up_stack(command)
 {
 	const stack_size = 8192;
@@ -146,6 +148,9 @@ function execve(command, file)
 
 		document_log("[INFO]: mmap range: " + mem_start.toString(16) + " " + mem_end.toString(16))
 
+		if (data_end < mem_end) {
+			data_end = mem_end;
+		}
 		unicorn.mem_map(mem_start, mem_diff, uc.PROT_ALL);
 		unicorn.mem_write(phdr.p_vaddr.num(), seg_data);
 	}
