@@ -47,9 +47,9 @@ function brk(unicorn)
 
 	if (Math.floor((rdi.num()-1) / 4096) > Math.floor((heap_addr-1) / 4096)) {
 	// Missing Page
-		var map_base = (Math.floor(heap_addr / 4096))*4096;
+		var map_base = (Math.floor((heap_addr-1) / 4096)+1)*4096;
 		var size = Math.ceil(rdi.num() / 4096)*4096;
-		unicorn.mem_map(map_base, size, uc.PROT_ALL);
+		unicorn.mem_map(map_base, size-map_base, uc.PROT_ALL);
 	}
 	heap_addr = rdi.num();
 	unicorn.reg_write_i64(uc.X86_REG_RAX, heap_addr);
@@ -74,6 +74,8 @@ function exit(unicorn)
 
 function arch_prctl(unicorn)
 {
+    document_log("PRCTL")
+    unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
 }
 
 function gettid(unicorn)
