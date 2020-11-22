@@ -32,6 +32,7 @@ function write(unicorn)
 
 function brk(unicorn)
 {
+    document_log("BRK")
 	const rdi = unicorn.reg_read_i64(uc.X86_REG_RDI);
 	const elf_header = elf.getehdr();
 
@@ -74,7 +75,13 @@ function exit(unicorn)
 
 function arch_prctl(unicorn)
 {
-    document_log("PRCTL")
+    const rdi = unicorn.reg_read_i64(uc.X86_REG_RDI);
+    const rsi = unicorn.reg_read_i64(uc.X86_REG_RSI);
+    //const fsmsr = 0xC0000100;
+    const fsmsr = [0x00, 0x01, 0x00, 0xc0, 0xb8, 0xe4, 0x11, 0x00, 0x00, 0x00, 0x00, 0x00];
+    
+    document_log(["PRCTL", rdi.hex(), rsi.hex()])
+    unicorn.reg_write_i64(uc.X86_REG_MSR, fsmsr);
     unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
 }
 

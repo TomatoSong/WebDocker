@@ -31,11 +31,13 @@ function reg_log(unicorn)
 {
 	// Read register values
 	var rax = unicorn.reg_read_i64(uc.X86_REG_RAX);
+	var rbp = unicorn.reg_read_i64(uc.X86_REG_RBP);
 	var rsp = unicorn.reg_read_i64(uc.X86_REG_RSP);
 	var rip = unicorn.reg_read_i64(uc.X86_REG_RIP);
 
 	// Print register values
 	document_log("[INFO]: reg_log[rax]: " + rax.hex() + " (hex), " + rax + " (uint)");
+	document_log("[INFO]: reg_log[rbp]: " + rbp.hex() + " (hex), " + rbp + " (uint)");
 	document_log("[INFO]: reg_log[rsp]: " + rsp.hex() + " (hex), " + rsp + " (uint)");
 	document_log("[INFO]: reg_log[rip]: " + rip.hex() + " (hex), " + rip + " (uint)");
 }
