@@ -91,9 +91,9 @@ function start_thread(command, elf_entry, elf_end)
 	catch (error)
 	{
 		document_log("[ERROR]: emulation failed: " + error + ".")
+		reg_log(unicorn);
 		var rip = fork(unicorn);
 		// Log
-	    reg_log(unicorn);
 	    
 		try
 	    {
@@ -102,7 +102,6 @@ function start_thread(command, elf_entry, elf_end)
 	    catch (error)
 	    {
 		    document_log("[ERROR]: emulation failed AGAIN: " + error + ".")
-		    var rip = fork(unicorn);
 		
 	    }
 	}
