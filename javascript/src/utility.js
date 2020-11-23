@@ -30,24 +30,24 @@ function mem_log(unicorn, address, size)
 function reg_log(unicorn)
 {
 	// Read register values
-    var rax = original.reg_read_i64(uc.X86_REG_RAX);
-    var rbx = original.reg_read_i64(uc.X86_REG_RBX);
-    var rcx = original.reg_read_i64(uc.X86_REG_RCX);
-    var rdx = original.reg_read_i64(uc.X86_REG_RDX);
-    var rsi = original.reg_read_i64(uc.X86_REG_RSI);
-    var rdi = original.reg_read_i64(uc.X86_REG_RDI);
-    var rbp = original.reg_read_i64(uc.X86_REG_RBP);
-    var rsp = original.reg_read_i64(uc.X86_REG_RSP);
-    var r8 = original.reg_read_i64(uc.X86_REG_R8);
-    var r9 = original.reg_read_i64(uc.X86_REG_R9);
-    var r10 = original.reg_read_i64(uc.X86_REG_R10);
-    var r11 = original.reg_read_i64(uc.X86_REG_R11);
-    var r12 = original.reg_read_i64(uc.X86_REG_R12);
-    var r13 = original.reg_read_i64(uc.X86_REG_R13);
-    var r14 = original.reg_read_i64(uc.X86_REG_R14);
-    var r15 = original.reg_read_i64(uc.X86_REG_R15);
-    var rip = original.reg_read_i64(uc.X86_REG_RIP);
-    var eflags = original.reg_read_i32(uc.X86_REG_EFLAGS);
+    var rax = unicorn.reg_read_i64(uc.X86_REG_RAX);
+    var rbx = unicorn.reg_read_i64(uc.X86_REG_RBX);
+    var rcx = unicorn.reg_read_i64(uc.X86_REG_RCX);
+    var rdx = unicorn.reg_read_i64(uc.X86_REG_RDX);
+    var rsi = unicorn.reg_read_i64(uc.X86_REG_RSI);
+    var rdi = unicorn.reg_read_i64(uc.X86_REG_RDI);
+    var rbp = unicorn.reg_read_i64(uc.X86_REG_RBP);
+    var rsp = unicorn.reg_read_i64(uc.X86_REG_RSP);
+    var r8 = unicorn.reg_read_i64(uc.X86_REG_R8);
+    var r9 = unicorn.reg_read_i64(uc.X86_REG_R9);
+    var r10 = unicorn.reg_read_i64(uc.X86_REG_R10);
+    var r11 = unicorn.reg_read_i64(uc.X86_REG_R11);
+    var r12 = unicorn.reg_read_i64(uc.X86_REG_R12);
+    var r13 = unicorn.reg_read_i64(uc.X86_REG_R13);
+    var r14 = unicorn.reg_read_i64(uc.X86_REG_R14);
+    var r15 = unicorn.reg_read_i64(uc.X86_REG_R15);
+    var rip = unicorn.reg_read_i64(uc.X86_REG_RIP);
+    var eflags = unicorn.reg_read_i32(uc.X86_REG_EFLAGS);
 
 	// Print register values
 	document_log("[INFO]: reg_log[rax]: " + rax.hex() + " (hex), " + rax + " (uint)");
