@@ -3,6 +3,7 @@ var fit_addon = new FitAddon.FitAddon();
 
 term.loadAddon(fit_addon);
 term.open(document.getElementById("container_terminal"));
+term.focus()
 fit_addon.fit();
 
 String.prototype.insert = function(idx, str)
@@ -162,11 +163,7 @@ function terminal()
 						.then(response => response.arrayBuffer())
 						.then(file => execve(command, file))
 						.then(() => term.prompt())
-						.catch(function() {
-							term.writeln("ERROR: " + buffer_array[0] +
-										 ": command not found.");
-							term.prompt();
-						});
+
 				}
 				
 			 	buffer = "";

@@ -69,6 +69,12 @@ function set_up_stack(command)
 	mem_log(unicorn, stack_addr, 10)
 }
 
+function hook_mem_issue(unicorn) {
+    document_log("MEMORY ISsue")
+    var rip = unicorn.reg_read_i64(uc.X86_REG_RIP);
+    reg_log(unicorn);
+}
+
 function start_thread(command, elf_entry, elf_end)
 {
 	// Set up stack
@@ -76,6 +82,7 @@ function start_thread(command, elf_entry, elf_end)
 
 	// Add system call hook
 	unicorn.hook_add(uc.HOOK_INSN, hook_system_call, {}, 1, 0, uc.X86_INS_SYSCALL);
+	unicorn.hook_add(uc.HOOK_MEM_READ_UNMAPPED, hook_mem_issue, {}, 1, 0, 0);
 
 	// Log
 	mem_log(unicorn, elf_entry, 10)
@@ -84,27 +91,35 @@ function start_thread(command, elf_entry, elf_end)
 	// Start emulation
 	document_log("[INFO]: emulation started at 0x" + elf_entry.toString(16) + ".")
 
-	try
-	{
-		unicorn.emu_start(elf_entry, elf_end , 0, 0);
-	}
-	catch (error)
-	{
-		document_log("[ERROR]: emulation failed: " + error + ".")
-		reg_log(unicorn);
-		var rip = fork(unicorn);
-		// Log
-	    
-		try
+    do {
+    	try
 	    {
-		    unicorn.emu_start(rip.num(), elf_end , 0, 0);
+	        if (continue_arch_prctl_flag) {
+	            document_log("[INFO]: 2nd half of emulation")
+	            continue_arch_prctl_flag = 0;
+	            mem_log(unicorn, 0x8000, 10);
+	            
+	            unicorn.emu_start(0x8000, 0x8002, 0, 0);
+	            
+	            document_log("[INFO]: prctl fixed");
+	            unicorn.mem_write(0x8000, continue_arch_prctl_mem);
+	            unicorn.reg_write_i64(uc.X86_REG_RAX, continue_arch_prctl_rax);
+                unicorn.reg_write_i64(uc.X86_REG_RDX, continue_arch_prctl_rdx);
+                unicorn.reg_write_i64(uc.X86_REG_RCX, continue_arch_prctl_rcx);
+	            
+	            document_log("Continuing at" + continue_arch_prctl_rip.toString(16))
+	            unicorn.emu_start(continue_arch_prctl_rip, elf_end , 0, 0);
+	            
+	        } else {
+	        	unicorn.emu_start(elf_entry, elf_end , 0, 0);
+	        }
 	    }
 	    catch (error)
 	    {
-		    document_log("[ERROR]: emulation failed AGAIN: " + error + ".")
-		
+		    document_log("[ERROR]: emulation failed: " + error + ".")
 	    }
-	}
+    } while (continue_arch_prctl_flag)
+
 
 	// Log
 	reg_log(unicorn);
