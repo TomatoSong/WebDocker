@@ -97,12 +97,12 @@ function start_thread(command, elf_entry, elf_end)
 	        if (continue_arch_prctl_flag) {
 	            document_log("[INFO]: 2nd half of emulation")
 	            continue_arch_prctl_flag = 0;
-	            mem_log(unicorn, 0x8000, 10);
+	            mem_log(unicorn, 0x400000, 10);
 	            
-	            unicorn.emu_start(0x8000, 0x8002, 0, 0);
+	            unicorn.emu_start(0x400000, 0x400002, 0, 0);
 	            
 	            document_log("[INFO]: prctl fixed");
-	            unicorn.mem_write(0x8000, continue_arch_prctl_mem);
+	            unicorn.mem_write(0x400000, continue_arch_prctl_mem);
 	            unicorn.reg_write_i64(uc.X86_REG_RAX, continue_arch_prctl_rax);
                 unicorn.reg_write_i64(uc.X86_REG_RDX, continue_arch_prctl_rdx);
                 unicorn.reg_write_i64(uc.X86_REG_RCX, continue_arch_prctl_rcx);
