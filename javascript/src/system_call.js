@@ -112,11 +112,11 @@ function arch_prctl(unicorn)
     continue_arch_prctl_rax = rax
     continue_arch_prctl_rcx = rcx
     continue_arch_prctl_rdx = rdx
-    continue_arch_prctl_mem = unicorn.mem_read(0x400000, 5)
+    continue_arch_prctl_mem = unicorn.mem_read(elf_entry, 5)
     unicorn.reg_write_i64(uc.X86_REG_RAX, rsi);
     unicorn.reg_write_i64(uc.X86_REG_RDX, 0);
     unicorn.reg_write_i64(uc.X86_REG_RCX, 0xC0000100);
-    unicorn.mem_write(0x400000, [0x0f, 0x30, 0x90, 0x90, 0x90]);
+    unicorn.mem_write(elf_entry, [0x0f, 0x30, 0x90, 0x90, 0x90]);
     document_log(["PRCTLSTOP", rdi.hex(), rsi.hex(), rip.hex()])
 
     unicorn.emu_stop()

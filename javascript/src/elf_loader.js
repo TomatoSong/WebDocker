@@ -97,12 +97,12 @@ function start_thread(command, elf_entry, elf_end)
 	        if (continue_arch_prctl_flag) {
 	            document_log("[INFO]: 2nd half of emulation")
 	            continue_arch_prctl_flag = 0;
-	            mem_log(unicorn, 0x400000, 10);
+	            mem_log(unicorn, elf_entry, 10);
 	            
-	            unicorn.emu_start(0x400000, 0x400002, 0, 0);
+	            unicorn.emu_start(elf_entry, elf_entry+2, 0, 0);
 	            
 	            document_log("[INFO]: prctl fixed");
-	            unicorn.mem_write(0x400000, continue_arch_prctl_mem);
+	            unicorn.mem_write(elf_entry, continue_arch_prctl_mem);
 	            unicorn.reg_write_i64(uc.X86_REG_RAX, continue_arch_prctl_rax);
                 unicorn.reg_write_i64(uc.X86_REG_RDX, continue_arch_prctl_rdx);
                 unicorn.reg_write_i64(uc.X86_REG_RCX, continue_arch_prctl_rcx);
@@ -205,7 +205,7 @@ function execve(command, file)
 	unicorn = new uc.Unicorn(uc.ARCH_X86, uc.MODE_64);
 	unicorn.set_integer_type(ELF_INT_OBJECT);
 
-	const elf_entry = ehdr.e_entry.num();
+	elf_entry = ehdr.e_entry.num();
 	const elf_end = file.byteLength;
 
 	// Write segments to memory
