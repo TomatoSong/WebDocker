@@ -129,6 +129,8 @@ function terminal()
 							{
 								command[0] = command[0].replace(/"/g, "");
 								command[0] = command[0].replace(/'/g, "");
+								command[1] = command[1].replace(/"/g, "");
+								command[1] = command[1].replace(/'/g, "");
 								command[command.length - 1] = command[
 									command.length - 1].replace(/"/g, "");
 								command[command.length - 1] = command[
@@ -153,6 +155,8 @@ function terminal()
 					{
 						command[0] = command[0].replace(/"/g, "");
 						command[0] = command[0].replace(/'/g, "");
+						command[1] = command[1].replace(/"/g, "");
+						command[1] = command[1].replace(/'/g, "");
 						command[command.length - 1] = command[
 							command.length - 1].replace(/"/g, "");
 						command[command.length - 1] = command[
