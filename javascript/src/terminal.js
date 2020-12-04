@@ -125,16 +125,20 @@ function terminal()
 						{
 							var command = buffer_array.slice(3);
 
-							if (command.length != 0)
+							if (command.length > 0)
 							{
 								command[0] = command[0].replace(/"/g, "");
 								command[0] = command[0].replace(/'/g, "");
-								command[1] = command[1].replace(/"/g, "");
-								command[1] = command[1].replace(/'/g, "");
 								command[command.length - 1] = command[
 									command.length - 1].replace(/"/g, "");
 								command[command.length - 1] = command[
 									command.length - 1].replace(/'/g, "");
+							}
+
+							if (command.length > 1)
+							{
+								command[1] = command[1].replace(/"/g, "");
+								command[1] = command[1].replace(/'/g, "");
 							}
 
 							open_image(buffer_array[2], command)
@@ -151,16 +155,20 @@ function terminal()
 				{
 					var command = buffer_array;
 
-					if (command.length != 0)
+					if (command.length > 0)
 					{
 						command[0] = command[0].replace(/"/g, "");
 						command[0] = command[0].replace(/'/g, "");
-						command[1] = command[1].replace(/"/g, "");
-						command[1] = command[1].replace(/'/g, "");
 						command[command.length - 1] = command[
 							command.length - 1].replace(/"/g, "");
 						command[command.length - 1] = command[
 							command.length - 1].replace(/'/g, "");
+					}
+
+					if (command.length > 1)
+					{
+						command[1] = command[1].replace(/"/g, "");
+						command[1] = command[1].replace(/'/g, "");
 					}
 
 					fetch("bin/" + command[0])
