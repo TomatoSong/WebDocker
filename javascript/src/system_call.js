@@ -15,8 +15,14 @@ function hook_system_call(unicorn)
 
 function write(unicorn)
 {
+	const rdi = unicorn.reg_read_i64(uc.X86_REG_RDI);
 	const rsi = unicorn.reg_read_i64(uc.X86_REG_RSI);
 	const rdx = unicorn.reg_read_i64(uc.X86_REG_RDX);
+
+	if (rdi.num() != 1 && rdi.num() != 2)
+	{
+		return;
+	}
 
 	const buffer = unicorn.mem_read(rsi, rdx.num());
 	const string = new TextDecoder("utf-8").decode(buffer);
