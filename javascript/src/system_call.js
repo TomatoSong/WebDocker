@@ -34,6 +34,8 @@ function write(unicorn)
 	}
 
 	term.write(string_array[string_array.length - 1]);
+
+	unicorn.reg_write_i64(uc.X86_REG_RAX, rdx.num());
 }
 
 function brk(unicorn)
