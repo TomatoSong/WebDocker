@@ -1,6 +1,5 @@
 var unicorn = null;
 var elf = null;
-
 var data_end = 0;
 
 function set_up_stack(command)
@@ -49,16 +48,18 @@ function set_up_stack(command)
 	// NULL that ends argv[]
 	stack_pointer -= 8;
 
-	// Argv pointers
+	// Argv pointers (reversed)
 	for (var i = argv_pointers.length - 1; i >= 0; i --)
 	{
 		stack_pointer -= 8;
-		unicorn.mem_write(stack_pointer, new Uint8Array(new ElfUInt64(argv_pointers[i]).chunks.buffer));
+		unicorn.mem_write(stack_pointer,
+						  new Uint8Array(new ElfUInt64(argv_pointers[i]).chunks.buffer));
 	}
 
 	// Argc (which is 64 bit)
 	stack_pointer -= 8;
-	unicorn.mem_write(stack_pointer, new Uint8Array(new ElfUInt64(argv_pointers.length).chunks.buffer));
+	unicorn.mem_write(stack_pointer,
+					  new Uint8Array(new ElfUInt64(argv_pointers.length).chunks.buffer));
 	
 	mem_log(unicorn, stack_pointer, 20)
 
@@ -69,12 +70,6 @@ function set_up_stack(command)
 	mem_log(unicorn, stack_addr, 10)
 }
 
-function hook_mem_issue(unicorn) {
-    document_log("MEMORY ISsue")
-    var rip = unicorn.reg_read_i64(uc.X86_REG_RIP);
-    reg_log(unicorn);
-}
-
 function start_thread(command, elf_entry, elf_end)
 {
 	// Set up stack
@@ -82,7 +77,7 @@ function start_thread(command, elf_entry, elf_end)
 
 	// Add system call hook
 	unicorn.hook_add(uc.HOOK_INSN, hook_system_call, {}, 1, 0, uc.X86_INS_SYSCALL);
-	unicorn.hook_add(uc.HOOK_MEM_READ_UNMAPPED, hook_mem_issue, {}, 1, 0, 0);
+	unicorn.hook_add(uc.HOOK_MEM_READ_UNMAPPED, hook_memory_read_unmapped, {}, 1, 0, 0);
 
 	// Log
 	mem_log(unicorn, elf_entry, 10)
@@ -91,26 +86,28 @@ function start_thread(command, elf_entry, elf_end)
 	// Start emulation
 	document_log("[INFO]: emulation started at 0x" + elf_entry.toString(16) + ".")
 
-    do {
+    do
+	{
     	try
 	    {
-	        if (continue_arch_prctl_flag) {
+	        if (continue_arch_prctl_flag)
+			{
 	            document_log("[INFO]: 2nd half of emulation")
 	            continue_arch_prctl_flag = 0;
 	            mem_log(unicorn, elf_entry, 10);
-	            
-	            unicorn.emu_start(elf_entry, elf_entry+2, 0, 0);
-	            
-	            document_log("[INFO]: prctl fixed");
+	            unicorn.emu_start(elf_entry, elf_entry + 2, 0, 0);
+
+	            document_log("[INFO]: prctl fixed.");
 	            unicorn.mem_write(elf_entry, continue_arch_prctl_mem);
 	            unicorn.reg_write_i64(uc.X86_REG_RAX, continue_arch_prctl_rax);
                 unicorn.reg_write_i64(uc.X86_REG_RDX, continue_arch_prctl_rdx);
                 unicorn.reg_write_i64(uc.X86_REG_RCX, continue_arch_prctl_rcx);
-	            
+
 	            document_log("Continuing at" + continue_arch_prctl_rip.toString(16))
-	            unicorn.emu_start(continue_arch_prctl_rip, elf_end , 0, 0);
-	            
-	        } else {
+	            unicorn.emu_start(continue_arch_prctl_rip, elf_end , 0, 0);	            
+	        }
+			else
+			{
 	        	unicorn.emu_start(elf_entry, elf_end , 0, 0);
 	        }
 	    }
@@ -118,65 +115,11 @@ function start_thread(command, elf_entry, elf_end)
 	    {
 		    document_log("[ERROR]: emulation failed: " + error + ".")
 	    }
-    } while (continue_arch_prctl_flag)
-
+    }
+	while (continue_arch_prctl_flag)
 
 	// Log
 	reg_log(unicorn);
-}
-
-function fork(original) {
-    // Get mem state
-    var mem_lower = original.mem_read(0, 0x11f000);
-    var mem_higher = original.mem_read(0x800000000000-8192, 8192)
-    
-    // Get CPU state
-    var rax = original.reg_read_i64(uc.X86_REG_RAX);
-    var rbx = original.reg_read_i64(uc.X86_REG_RBX);
-    var rcx = original.reg_read_i64(uc.X86_REG_RCX);
-    var rdx = original.reg_read_i64(uc.X86_REG_RDX);
-    var rsi = original.reg_read_i64(uc.X86_REG_RSI);
-    var rdi = original.reg_read_i64(uc.X86_REG_RDI);
-    var rbp = original.reg_read_i64(uc.X86_REG_RBP);
-    var rsp = original.reg_read_i64(uc.X86_REG_RSP);
-    var r8 = original.reg_read_i64(uc.X86_REG_R8);
-    var r9 = original.reg_read_i64(uc.X86_REG_R9);
-    var r10 = original.reg_read_i64(uc.X86_REG_R10);
-    var r11 = original.reg_read_i64(uc.X86_REG_R11);
-    var r12 = original.reg_read_i64(uc.X86_REG_R12);
-    var r13 = original.reg_read_i64(uc.X86_REG_R13);
-    var r14 = original.reg_read_i64(uc.X86_REG_R14);
-    var r15 = original.reg_read_i64(uc.X86_REG_R15);
-    var rip = original.reg_read_i64(uc.X86_REG_RIP);
-    var eflags = original.reg_read_i32(uc.X86_REG_EFLAGS);
-    
-    var cloned = new uc.Unicorn(uc.ARCH_X86, uc.MODE_64);
-    cloned.set_integer_type(ELF_INT_OBJECT);
-    cloned.mem_map(0, 0x11f000, uc.PROT_ALL);
-    cloned.mem_write(0, mem_lower);
-    cloned.mem_map(0x800000000000-8192, 8192, uc.PROT_ALL);
-    cloned.mem_write(0x800000000000-8192, mem_higher);
-    
-    cloned.reg_write_i64(uc.X86_REG_RAX, rax);
-    cloned.reg_write_i64(uc.X86_REG_RBX, rbx);
-    cloned.reg_write_i64(uc.X86_REG_RCX, rcx);
-    cloned.reg_write_i64(uc.X86_REG_RDX, rdx);
-    cloned.reg_write_i64(uc.X86_REG_RSI, rsi);
-    cloned.reg_write_i64(uc.X86_REG_RDI, rdi);
-    cloned.reg_write_i64(uc.X86_REG_RBP, rbp);
-    cloned.reg_write_i64(uc.X86_REG_RSP, rsp);
-    cloned.reg_write_i64(uc.X86_REG_R8, r8);
-    cloned.reg_write_i64(uc.X86_REG_R9, r9);
-    cloned.reg_write_i64(uc.X86_REG_R10, r10);
-    cloned.reg_write_i64(uc.X86_REG_R11, r11);
-    cloned.reg_write_i64(uc.X86_REG_R12, r12);
-    cloned.reg_write_i64(uc.X86_REG_R13, r13);
-    cloned.reg_write_i64(uc.X86_REG_R14, r14);
-    cloned.reg_write_i64(uc.X86_REG_R15, r15);
-    cloned.reg_write_i32(uc.X86_REG_EFLAGS, eflags);
-    
-    unicorn=cloned;
-    return rip;
 }
 
 function execve(command, file)
@@ -228,11 +171,14 @@ function execve(command, file)
 		const mem_end = Math.ceil((phdr.p_vaddr.num() + seg_size) / (4 * 1024)) * (4 * 1024);
 		const mem_diff = mem_end - mem_start;
 
-		document_log("[INFO]: mmap range: " + mem_start.toString(16) + " " + mem_end.toString(16))
+		document_log("[INFO]: mmap range: " + mem_start.toString(16) + " " +
+					 mem_end.toString(16))
 
-		if (data_end < mem_end) {
+		if (data_end < mem_end)
+		{
 			data_end = mem_end;
 		}
+
 		unicorn.mem_map(mem_start, mem_diff, uc.PROT_ALL);
 		unicorn.mem_write(phdr.p_vaddr.num(), seg_data);
 	}
