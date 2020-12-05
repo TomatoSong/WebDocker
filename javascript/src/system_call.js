@@ -1,17 +1,4 @@
-var heap_addr = 0;
-
-function hook_system_call(unicorn)
-{
-    const rax = unicorn.reg_read_i64(uc.X86_REG_RAX);
-
-	if (!system_call_dictionary[rax.num()])
-	{
-		term.writeln("ERROR: missing system call: " + rax.num() + ".")
-		return
-	}
-
-	system_call_dictionary[rax.num()](unicorn)
-}
+import writeToTerm from './terminal.js';
 
 function write(unicorn)
 {
@@ -19,22 +6,22 @@ function write(unicorn)
 	const rdx = unicorn.reg_read_i64(uc.X86_REG_RDX);
 
 	const buffer = unicorn.mem_read(rsi, rdx.num());
+	console.log(buffer);
 	const string = new TextDecoder("utf-8").decode(buffer);
-	const string_array = string.split("\n")
+	const string_array = string.split("\n");
 
 	for (var i = 0; i < string_array.length - 1; i ++)
 	{
-		term.writeln(string_array[i]);
+		writeToTerm(string_array[i]);
 	}
 
-	term.write(string_array[string_array.length - 1]);
+	writeToTerm(string_array[string_array.length - 1]);
 }
 
 function brk(unicorn)
 {
     document_log("BRK")
 	const rdi = unicorn.reg_read_i64(uc.X86_REG_RDI);
-	const elf_header = elf.getehdr();
 
 	if (heap_addr == 0) {
 		heap_addr = data_end;
@@ -48,8 +35,8 @@ function brk(unicorn)
 
 	if (Math.floor((rdi.num()-1) / 4096) > Math.floor((heap_addr-1) / 4096)) {
 	// Missing Page
-		var map_base = (Math.floor((heap_addr-1) / 4096)+1)*4096;
-		var size = Math.ceil(rdi.num() / 4096)*4096;
+		let map_base = (Math.floor((heap_addr-1) / 4096)+1)*4096;
+		let size = Math.ceil(rdi.num() / 4096)*4096;
 		unicorn.mem_map(map_base, size-map_base, uc.PROT_ALL);
 	}
 	heap_addr = rdi.num();
@@ -65,20 +52,13 @@ function exit(unicorn)
 {
 	const rdi = unicorn.reg_read_i64(uc.X86_REG_RDI);
 
-	unicorn.emu_stop()
+	unicorn.emu_stop();
 
 	if (rdi.num() != 0)
 	{
-		term.writeln("WARN: program exit with code " + rdi.num() + ".");
+		writeToTerm("WARN: program exit with code " + rdi.num() + ".");
 	}
 }
-
-continue_arch_prctl_flag = 0;
-continue_arch_prctl_rip = 0;
-continue_arch_prctl_rax = 0;
-continue_arch_prctl_rcx = 0;
-continue_arch_prctl_rdx = 0;
-continue_arch_prctl_mem = 0;
 
 function arch_prctl(unicorn)
 {
@@ -120,8 +100,6 @@ function arch_prctl(unicorn)
     document_log(["PRCTLSTOP", rdi.hex(), rsi.hex(), rip.hex()])
 
     unicorn.emu_stop()
-    
-
     return
 }
 
