@@ -1,3 +1,5 @@
+import { syscall_table } from './table_x86_64.js';
+
 export default class SystemCall
 {
 	constructor(unicorn, terminal, logger)
@@ -228,7 +230,8 @@ export default class SystemCall
 
         if (!this.system_call_dictionary[rax.num()])
         {
-            this.terminal.writeln("ERROR: missing system call: " + rax.num() + ".")
+			this.terminal.writeln("ERROR: missing system call: " 
+			+ rax.num() + " " + syscall_table[rax.num()] + ".");
             return;
         }
 
