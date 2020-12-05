@@ -12,22 +12,15 @@
 	<script src="javascript/lib/pako.min.js"></script>
 	<script src="javascript/lib/xterm.js"></script>
 	<script src="javascript/lib/xterm-addon-fit.js"></script>
+	<script type="module" src="javascript/src/webdocker.js"></script>
   </head>
 
   <body class="webdocker">
 	<div id="container_terminal"></div>
 
-	<h2>ELF Loader Console</h2>
+	<h2>Logger</h2>
 	<p>
-	  <span id="elf_loader">Waiting for active session...</span>
+	  <span id="logger">Waiting for active sessions...</span>
 	</p>
   </body>
-
-  <script src="javascript/src/utility.js"></script>
-  <!-- <script src="javascript/src/file_system.js"></script> -->
-  <!-- <script type="module" src="javascript/src/system_call.js"></script>   -->
-  <!-- <script src="javascript/src/elf_loader.js"></script> -->
-  <script type="module" src="javascript/src/terminal.js"></script>
-  <script type="module" src="javascript/src/main.js"></script>
-  <script type="module" src="javascript/src/process.js"></script>
 </html>

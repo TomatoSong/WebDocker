@@ -1,184 +1,31 @@
-import './utility.js';
+import Logger from "./logger.js";
+import SystemCall from "./system_call.js";
 
-export default class Process {
-    constructor(filename, file, args, write_to_term) {
-        this.filename = filename;
-        this.file = file;
-		this.args = args;
-		this.write_to_term = write_to_term;
+export default class Process
+{
+    constructor(terminal, file_system)
+	{
+		this.terminal = terminal;
+		this.file_system = file_system;
+
+		this.logger = new Logger();
 		this.unicorn = new uc.Unicorn(uc.ARCH_X86, uc.MODE_64);
+		this.system_call = new SystemCall(this.unicorn, this.terminal, this.logger);
         this.unicorn.set_integer_type(ELF_INT_OBJECT);
-        this.heap_addr = 0;
-		this.data_end = 0;
-        this.unicorn.hook_add(uc.HOOK_INSN, this.hook_system_call.bind(this), {}, 1, 0, uc.X86_INS_SYSCALL);
-		this.unicorn.hook_add(uc.HOOK_MEM_READ_UNMAPPED, this.hook_mem_issue, {}, 1, 0, 0);
 
-		this.system_call_dictionary = {
-			1: this.write.bind(this),
-			12: this.brk.bind(this),
-			39: this.getpid.bind(this),
-			60: this.exit.bind(this),
-			158: this.arch_prctl.bind(this),
-			186: this.gettid.bind(this),
-			218: this.set_tid_address.bind(this),
-			231: this.exit_group.bind(this)
-		};
-
-		this.continue_arch_prctl_flag = 0;
-		this.continue_arch_prctl_rip = 0;
-		this.continue_arch_prctl_rax = 0;
-		this.continue_arch_prctl_rcx = 0;
-		this.continue_arch_prctl_rdx = 0;
-		this.continue_arch_prctl_mem = 0;
-	}
-	
-	write()
-	{
-		const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
-		const rsi = this.unicorn.reg_read_i64(uc.X86_REG_RSI);
-		const rdx = this.unicorn.reg_read_i64(uc.X86_REG_RDX);
-		
-		if (rdi.num() != 1 && rdi.num() != 2)
-			return;
-
-		const buffer = this.unicorn.mem_read(rsi, rdx.num());
-		const string = new TextDecoder("utf-8").decode(buffer);
-		const string_array = string.split("\n");
-
-		for (var i = 0; i < string_array.length - 1; i ++)
-			this.write_to_term(string_array[i]);
-
-		this.write_to_term(string_array[string_array.length - 1]);
-		this.unicorn.reg_write_i64(uc.X86_REG_RAX, rdx.num());
-	}
-
-	brk()
-	{
-		document_log("BRK");
-		const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
-
-		if (this.heap_addr == 0) {
-			this.heap_addr = this.data_end;
-		}
-
-		if (rdi.num() < this.heap_addr)
-		{
-			this.unicorn.reg_write_i64(uc.X86_REG_RAX, this.heap_addr);
-			return;
-		}
-
-		if (Math.floor((rdi.num()-1) / 4096) > Math.floor((this.heap_addr-1) / 4096)) 
-		{
-			// Missing Page
-			let map_base = (Math.floor((this.heap_addr-1) / 4096)+1)*4096;
-			let size = Math.ceil(rdi.num() / 4096)*4096;
-			this.unicorn.mem_map(map_base, size-map_base, uc.PROT_ALL);
-		}
-
-		this.heap_addr = rdi.num();
-		this.unicorn.reg_write_i64(uc.X86_REG_RAX, this.heap_addr);
-	}
-
-	getpid()
-	{
-		this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
-	}
-
-	exit()
-	{
-		const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
-
-		this.unicorn.emu_stop();
-
-		if (rdi.num() != 0)
-			this.write_to_term("WARN: program exit with code " + rdi.num() + ".\r\n");
-	}
-
-	arch_prctl()
-	{
-		const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
-		const rsi = this.unicorn.reg_read_i64(uc.X86_REG_RSI);
-		const rip = this.unicorn.reg_read_i64(uc.X86_REG_RIP);
-		const rax = this.unicorn.reg_read_i64(uc.X86_REG_RAX);
-		const rcx = this.unicorn.reg_read_i64(uc.X86_REG_RCX);
-		const rdx = this.unicorn.reg_read_i64(uc.X86_REG_RDX);
-		document_log(["PRCTL", rdi.hex(), rsi.hex(), rip.hex() ])
-		
-		// Normal method to write FS
-		//const fsmsr = 0xC0000100;
-		//const fsmsr = [0x00, 0x01, 0x00, 0xc0, 0xb8, 0xe4, 0x11, 0x00, 0x00, 0x00, 0x00, 0x00];
-		//unicorn.reg_write(uc.X86_REG_MSR, fsmsr);
-		//console.log(unicorn.reg_read(uc.X86_REG_MSR, 12))
-		
-		if (this.continue_arch_prctl_rip == rip.num()) 
-		{
-			document_log(["Returning", rdi.hex(), rsi.hex(), rip.hex()])
-			this.continue_arch_prctl_flag = 0;
-			this.continue_arch_prctl_rip = 0;
-			this.continue_arch_prctl_rax = 0;
-			this.continue_arch_prctl_rcx = 0;
-			this.continue_arch_prctl_rdx = 0;
-			this.continue_arch_prctl_mem = 0;
-			this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
-			return;
-		}
-		this.continue_arch_prctl_flag = 1;
-		this.continue_arch_prctl_rip = rip.num();
-		this.continue_arch_prctl_rax = rax;
-		this.continue_arch_prctl_rcx = rcx;
-		this.continue_arch_prctl_rdx = rdx;
-		this.continue_arch_prctl_mem = this.unicorn.mem_read(this.elf_entry, 5);
-		this.unicorn.reg_write_i64(uc.X86_REG_RAX, rsi);
-		this.unicorn.reg_write_i64(uc.X86_REG_RDX, 0);
-		this.unicorn.reg_write_i64(uc.X86_REG_RCX, 0xC0000100);
-		this.unicorn.mem_write(this.elf_entry, [0x0f, 0x30, 0x90, 0x90, 0x90]);
-		document_log(["PRCTLSTOP", rdi.hex(), rsi.hex(), rip.hex()]);
-
-		this.unicorn.emu_stop();
-		return;
-	}
-
-	gettid()
-	{
-		this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
-	}
-
-	set_tid_address()
-	{
-	}
-
-	exit_group()
-	{
-		this.exit();
-	}
-
-    hook_system_call()
-    {
-		const rax = this.unicorn.reg_read_i64(uc.X86_REG_RAX);
-
-        if (!this.system_call_dictionary[rax.num()])
-        {
-            this.write_to_term("ERROR: missing system call: " + rax.num() + ".")
-            return
-        }
-		this.system_call_dictionary[rax.num()]();
-	}
-	
-	hook_mem_issue()
-	{
-		document_log("MEMORY Issue");
-		reg_log(this.unicorn);
+		this.elf_entry = 0;
+		this.elf_end = 0;
 	}
     
-	write_mem()
+	load_elf()
 	{
 		// Create ELF file object
-		let elf = new Elf(this.file);
+		let elf = new Elf(this.file_system.file);
 
 		// Check if file is ELF
 		if (elf.kind() !== "elf")
 		{
-			document_log("[ERROR]: not an ELF file.");
+			this.logger.log_to_document("[ERROR]: not an ELF file.");
 			throw "[ERROR]: not an ELF file.";
 		}
 
@@ -188,12 +35,13 @@ export default class Process {
 		// Check if file is x86_64
 		if (ehdr.e_machine.num() !== EM_X86_64)
 		{
-			document_log("[ERROR]: not an x86_64 file.");
+			this.logger.log_to_document("[ERROR]: not an x86_64 file.");
 			throw "[ERROR]: not an x86_64 file.";
 		}
 
 		this.elf_entry = ehdr.e_entry.num();
-		this.elf_end = this.file.byteLength;
+		this.system_call.elf_entry = this.elf_entry;
+		this.elf_end = this.file_system.file.byteLength;
 
 		// Write segments to memory
 		for (let i = 0; i < ehdr.e_phnum.num(); i ++)
@@ -207,7 +55,7 @@ export default class Process {
 
 			const seg_start = phdr.p_offset.num();
 			const seg_end = seg_start + phdr.p_filesz.num();
-			const seg_data = new Uint8Array(this.file.slice(seg_start, seg_end));
+			const seg_data = new Uint8Array(this.file_system.file.slice(seg_start, seg_end));
 
 			// Map memory for ELF file
 			const seg_size = phdr.p_memsz.num();
@@ -215,17 +63,20 @@ export default class Process {
 			const mem_end = Math.ceil((phdr.p_vaddr.num() + seg_size) / (4 * 1024)) * (4 * 1024);
 			const mem_diff = mem_end - mem_start;
 
-			document_log("[INFO]: mmap range: " + mem_start.toString(16) + " " + mem_end.toString(16))
+			this.logger.log_to_document("[INFO]: mmap range: " + mem_start.toString(16) + " " +
+						 mem_end.toString(16));
 
-			if (this.data_end < mem_end) {
-				this.data_end = mem_end;
+			if (this.system_call.data_end < mem_end)
+			{
+				this.system_call.data_end = mem_end;
 			}
+
 			this.unicorn.mem_map(mem_start, mem_diff, uc.PROT_ALL);
 			this.unicorn.mem_write(phdr.p_vaddr.num(), seg_data);
 		}
 	}
 
-	setup_stack()
+	set_up_stack()
 	{
 		const stack_size = 8192;
 		const stack_addr = 0x800000000000 - stack_size;
@@ -242,18 +93,20 @@ export default class Process {
 		stack_pointer -= 8;
 
 		// Program name
-		stack_pointer -= this.filename.length;
-		this.unicorn.mem_write(stack_pointer, new TextEncoder("utf-8").encode(this.filename));
+		stack_pointer -= this.file_system.file_name.length;
+		this.unicorn.mem_write(stack_pointer,
+							   new TextEncoder("utf-8").encode(this.file_system.file_name));
 
 		// Environment string
 		// Empty for now
 	
 		// Argv strings
-		for (var i = 0; i < this.args.length; i ++)
+		for (var i = 0; i < this.file_system.command.length; i ++)
 		{
 			stack_pointer -= 1; // NULL termination of string
-			stack_pointer -= this.args[i].length;
-			this.unicorn.mem_write(stack_pointer, new TextEncoder("utf-8").encode(this.args[i]));
+			stack_pointer -= this.file_system.command[i].length;
+			this.unicorn.mem_write(stack_pointer,
+								   new TextEncoder("utf-8").encode(this.file_system.command[i]));
 			argv_pointers.push(stack_pointer);
 		}
 
@@ -274,60 +127,77 @@ export default class Process {
 		for (var i = argv_pointers.length - 1; i >= 0; i --)
 		{
 			stack_pointer -= 8;
-			this.unicorn.mem_write(stack_pointer, new Uint8Array(new ElfUInt64(argv_pointers[i]).chunks.buffer));
+			this.unicorn.mem_write(stack_pointer,
+								   new Uint8Array(new ElfUInt64(argv_pointers[i]).chunks.buffer));
 		}
 
 		// Argc (which is 64 bit)
 		stack_pointer -= 8;
-		this.unicorn.mem_write(stack_pointer, new Uint8Array(new ElfUInt64(argv_pointers.length).chunks.buffer));
+		this.unicorn.mem_write(stack_pointer,
+							   new Uint8Array(new ElfUInt64(argv_pointers.length).chunks.buffer));
 		
-		mem_log(this.unicorn, stack_pointer, 20)
+		this.logger.log_memory(this.unicorn, stack_pointer, 20)
 
 		// Set stack pointer
 		this.unicorn.reg_write_i64(uc.X86_REG_RSP, stack_pointer);
 		
 		// Log
-		mem_log(this.unicorn, stack_addr, 10);
+		this.logger.log_memory(this.unicorn, stack_addr, 10);
 	}
 
-	execute() {
+	execute()
+	{
+		this.load_elf();
+		this.set_up_stack();
+		
 		// Log
-		mem_log(this.unicorn, this.elf_entry, 10);
-		reg_log(this.unicorn);
+		this.logger.log_memory(this.unicorn, this.elf_entry, 10);
+		this.logger.log_register(this.unicorn);
 
 		// Start emulation
-		document_log("[INFO]: emulation started at 0x" + this.elf_entry.toString(16) + ".")
+		this.logger.log_to_document("[INFO]: emulation started at 0x" +
+									this.elf_entry.toString(16) + ".");
 
-		do {
+		do
+		{
 			try
 			{
-				if (this.continue_arch_prctl_flag) {
-					document_log("[INFO]: 2nd half of emulation")
-					this.continue_arch_prctl_flag = 0;
-					mem_log(this.unicorn, this.elf_entry, 10);
+				if (this.system_call.continue_arch_prctl_flag)
+				{
+					this.logger.log_to_document("[INFO]: 2nd half of emulation")
+					this.system_call.continue_arch_prctl_flag = 0;
+					this.logger.log_memory(this.unicorn, this.elf_entry, 10);
 					
-					this.unicorn.emu_start(this.elf_entry, this.elf_entry+2, 0, 0);
+					this.unicorn.emu_start(this.elf_entry, this.elf_entry + 2, 0, 0);
 					
-					document_log("[INFO]: prctl fixed");
-					this.unicorn.mem_write(this.elf_entry, this.continue_arch_prctl_mem);
-					this.unicorn.reg_write_i64(uc.X86_REG_RAX, this.continue_arch_prctl_rax);
-					this.unicorn.reg_write_i64(uc.X86_REG_RDX, this.continue_arch_prctl_rdx);
-					this.unicorn.reg_write_i64(uc.X86_REG_RCX, this.continue_arch_prctl_rcx);
+					this.logger.log_to_document("[INFO]: prctl fixed");
+					this.unicorn.mem_write(this.elf_entry,
+										   this.system_call.continue_arch_prctl_mem);
+					this.unicorn.reg_write_i64(uc.X86_REG_RAX,
+											   this.system_call.continue_arch_prctl_rax);
+					this.unicorn.reg_write_i64(uc.X86_REG_RDX,
+											   this.system_call.continue_arch_prctl_rdx);
+					this.unicorn.reg_write_i64(uc.X86_REG_RCX,
+											   this.system_call.continue_arch_prctl_rcx);
 					
-					document_log("Continuing at" + this.continue_arch_prctl_rip.toString(16))
-					this.unicorn.emu_start(this.continue_arch_prctl_rip, this.elf_end , 0, 0);
-					
-				} else {
+					this.logger.log_to_document("Continuing at" +
+								 this.system_call.continue_arch_prctl_rip.toString(16))
+					this.unicorn.emu_start(this.system_call.continue_arch_prctl_rip,
+										   this.elf_end , 0, 0);
+				}
+				else
+				{
 					this.unicorn.emu_start(this.elf_entry, this.elf_end, 0, 0);
 				}
 			}
 			catch (error)
 			{
-				document_log("[ERROR]: emulation failed: " + error + ".")
+				this.logger.log_to_document("[ERROR]: emulation failed: " + error + ".")
 			}
-		} while (this.continue_arch_prctl_flag)
+		}
+		while (this.system_call.continue_arch_prctl_flag)
 
 		// Log
-		reg_log(this.unicorn);
+		this.logger.log_register(this.unicorn);
 	}
 }
