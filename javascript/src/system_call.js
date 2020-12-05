@@ -159,7 +159,7 @@ export default class SystemCall
 
 		if (rdi.num() != 0)
 		{
-			this.terminal.writeln("WARN: program exit with code " + rdi.num() + ".\r\n");
+			this.terminal.writeln("WARN: program exit with code " + rdi.num() + ".");
 		}
 	}
 
