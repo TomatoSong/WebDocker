@@ -237,6 +237,10 @@ export default class Process {
 
 		// Program name
 		stack_pointer -= this.filename.length;
+		console.log("filename");
+		console.log(stack_pointer);
+		console.log(this.filename);
+		console.log(this.filename.length);
 		this.unicorn.mem_write(stack_pointer, new TextEncoder("utf-8").encode(this.filename));
 
 		// Environment string
@@ -249,7 +253,11 @@ export default class Process {
 			stack_pointer -= this.args[i].length;
 			this.unicorn.mem_write(stack_pointer, new TextEncoder("utf-8").encode(this.args[i]));
 			argv_pointers.push(stack_pointer);
+			console.log(i);
+			console.log(args[i]);
+			console.log(stack_pointer);
 		}
+		console.log(argv_pointers);
 
 		// ELF Auxiliary Table
 		// Empty for now, put NULL
@@ -269,11 +277,16 @@ export default class Process {
 		{
 			stack_pointer -= 8;
 			this.unicorn.mem_write(stack_pointer, new Uint8Array(new ElfUInt64(argv_pointers[i]).chunks.buffer));
+			console.log(i);
+			console.log(argv_pointers[i]);
+			console.log(stack_pointer);
 		}
 
 		// Argc (which is 64 bit)
 		stack_pointer -= 8;
 		this.unicorn.mem_write(stack_pointer, new Uint8Array(new ElfUInt64(argv_pointers.length).chunks.buffer));
+		console.log(argv_pointers.length);
+		console.log(stack_pointer);
 		
 		mem_log(this.unicorn, stack_pointer, 20)
 
