@@ -50,7 +50,7 @@ function set_up_stack(command)
 	stack_pointer -= 8;
 
 	// Argv pointers
-	for (var i = 0; i < argv_pointers.length; i ++)
+	for (var i = argv_pointers.length - 1; i >= argv_pointers.length; i --)
 	{
 		stack_pointer -= 8;
 		unicorn.mem_write(stack_pointer, new Uint8Array(new ElfUInt64(argv_pointers[i]).chunks.buffer));
