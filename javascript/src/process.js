@@ -197,6 +197,9 @@ export default class Process
 		}
 		while (this.system_call.continue_arch_prctl_flag)
 
+		// Finish emulation
+		this.logger.log_to_document("[INFO]: emulation finished.");
+
 		// Log
 		this.logger.log_register(this.unicorn);
 	}
