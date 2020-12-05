@@ -7,21 +7,27 @@ class WebDocker {
 		this.fs = {};
 	}
 
+	write_to_term(str){
+		this.terminal.write(str);
+		this.terminal.write("\r\n");
+		this.terminal.prompt();
+	}
+
 	onCtrl(keyCode) {
 		switch (keyCode) {
 			case 67: // Ctrl+C
 			{
-				this.terminal.write("\r\nINFO: received signal: \"Ctrl+C\".")
+				this.write_to_term("\r\nINFO: received signal: \"Ctrl+C\".")
 				break;
 			}
 			case 90: // Ctrl+Z
 			{
-				this.terminal.write("\r\nINFO: received signal: \"Ctrl+Z\".")
+				this.write_to_term("\r\nINFO: received signal: \"Ctrl+Z\".")
 				break;
 			}
 			case 220: // Ctrl+\
 			{
-				this.terminal.write("\r\nINFO: received signal: \"Ctrl+\\\".")
+				this.write_to_term("\r\nINFO: received signal: \"Ctrl+\\\".")
 				break;
 			}
 		}
@@ -31,17 +37,17 @@ class WebDocker {
 		let buffer_array = buffer.split(" ");
 
 		if (buffer === "fg")
-				this.terminal.write("\r\nINFO: received command: \"fg\".")
+				this.write_to_term("\r\nINFO: received command: \"fg\".")
 		else if (this.buffer === "jobs")
-				this.terminal.write("\r\nINFO: received command: \"jobs\".")
+				this.write_to_term("\r\nINFO: received command: \"jobs\".")
 		else if (buffer_array[0] == "docker")
 		{
 			if (!buffer_array[1] || buffer_array[1] != "run")
-					this.terminal.write("\r\nERROR: invalid docker command.")
+					this.write_to_term("\r\nERROR: invalid docker command.")
 			else
 			{
 				if (!buffer_array[2] || buffer_array[2] == "")
-					this.terminal.write("\r\nERROR: invalid docker image name.")
+					this.write_to_term("\r\nERROR: invalid docker image name.")
 				else
 				{
 					let args = buffer_array.slice(3);
@@ -58,7 +64,7 @@ class WebDocker {
 			fetch("bin/" + filename)
 				.then(response => response.arrayBuffer())
 				.then(file => {
-					p = new Process(filename, file, args);
+					p = new Process(filename, file, args, this.write_to_term.bind(this));
 					p.write_mem();
 					p.setup_stack();
 					p.execute();

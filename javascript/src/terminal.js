@@ -146,5 +146,3 @@ export default class WebDockerTerminal {
 		})
 	}
 }
-
-export const writeToTerm = WebDockerTerminal.prototype.write;

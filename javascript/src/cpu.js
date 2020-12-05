@@ -1,28 +1,27 @@
-import writeToTerm from './terminal.js';
 import './utility.js';
-// import '../lib/unicorn.js';
 
 export default class Process {
-    constructor(filename, file, args) {
+    constructor(filename, file, args, write_to_term) {
         this.filename = filename;
         this.file = file;
-        this.args = args;
-        this.unicorn = new uc.Unicorn(uc.ARCH_X86, uc.MODE_64);
+		this.args = args;
+		this.write_to_term = write_to_term;
+		this.unicorn = new uc.Unicorn(uc.ARCH_X86, uc.MODE_64);
         this.unicorn.set_integer_type(ELF_INT_OBJECT);
         this.heap_addr = 0;
-        this.data_end = 0;
-        this.unicorn.hook_add(uc.HOOK_INSN, this.hook_system_call, {}, 1, 0, uc.X86_INS_SYSCALL);
+		this.data_end = 0;
+        this.unicorn.hook_add(uc.HOOK_INSN, this.hook_system_call.bind(this), {}, 1, 0, uc.X86_INS_SYSCALL);
 		this.unicorn.hook_add(uc.HOOK_MEM_READ_UNMAPPED, this.hook_mem_issue, {}, 1, 0, 0);
 
 		this.system_call_dictionary = {
-			1: this.write,
-			12: this.brk,
-			39: this.getpid,
-			60: this.exit,
-			158: this.arch_prctl,
-			186: this.gettid,
-			218: this.set_tid_address,
-			231: this.exit_group
+			1: this.write.bind(this),
+			12: this.brk.bind(this),
+			39: this.getpid.bind(this),
+			60: this.exit.bind(this),
+			158: this.arch_prctl.bind(this),
+			186: this.gettid.bind(this),
+			218: this.set_tid_address.bind(this),
+			231: this.exit_group.bind(this)
 		};
 
 		this.continue_arch_prctl_flag = 0;
@@ -39,14 +38,13 @@ export default class Process {
 		const rdx = this.unicorn.reg_read_i64(uc.X86_REG_RDX);
 
 		const buffer = this.unicorn.mem_read(rsi, rdx.num());
-		console.log(buffer);
 		const string = new TextDecoder("utf-8").decode(buffer);
 		const string_array = string.split("\n");
 
 		for (var i = 0; i < string_array.length - 1; i ++)
-			writeToTerm(string_array[i]);
+			this.write_to_term(string_array[i]);
 
-		writeToTerm(string_array[string_array.length - 1]);
+		this.wite_to_term(string_array[string_array.length - 1]);
 	}
 
 	brk()
@@ -86,7 +84,7 @@ export default class Process {
 		this.unicorn.emu_stop();
 
 		if (rdi.num() != 0)
-			writeToTerm("WARN: program exit with code " + rdi.num() + ".");
+			this.write_to_term("WARN: program exit with code " + rdi.num() + ".");
 	}
 
 	arch_prctl()
@@ -148,15 +146,14 @@ export default class Process {
 
     hook_system_call()
     {
-        const rax = this.unicorn.reg_read_i64(uc.X86_REG_RAX);
+		const rax = this.unicorn.reg_read_i64(uc.X86_REG_RAX);
 
         if (!this.system_call_dictionary[rax.num()])
         {
-            writeToTerm("ERROR: missing system call: " + rax.num() + ".")
+            this.write_to_term("ERROR: missing system call: " + rax.num() + ".")
             return
         }
-
-        this.system_call_dictionary[rax.num()]();
+		this.system_call_dictionary[rax.num()]();
 	}
 	
 	hook_mem_issue() {
@@ -237,27 +234,21 @@ export default class Process {
 
 		// Program name
 		stack_pointer -= this.filename.length;
-		console.log("filename");
-		console.log(stack_pointer);
-		console.log(this.filename);
-		console.log(this.filename.length);
 		this.unicorn.mem_write(stack_pointer, new TextEncoder("utf-8").encode(this.filename));
 
 		// Environment string
 		// Empty for now
 
+		let command = this.args;
+		command.splice(0, 0, this.filename);
 		// Argv strings
-		for (var i = 0; i < this.args.length; i ++)
+		for (var i = 0; i < command.length; i ++)
 		{
 			stack_pointer -= 1; // NULL termination of string
-			stack_pointer -= this.args[i].length;
-			this.unicorn.mem_write(stack_pointer, new TextEncoder("utf-8").encode(this.args[i]));
+			stack_pointer -= command[i].length;
+			this.unicorn.mem_write(stack_pointer, new TextEncoder("utf-8").encode(command[i]));
 			argv_pointers.push(stack_pointer);
-			console.log(i);
-			console.log(args[i]);
-			console.log(stack_pointer);
 		}
-		console.log(argv_pointers);
 
 		// ELF Auxiliary Table
 		// Empty for now, put NULL
@@ -277,16 +268,11 @@ export default class Process {
 		{
 			stack_pointer -= 8;
 			this.unicorn.mem_write(stack_pointer, new Uint8Array(new ElfUInt64(argv_pointers[i]).chunks.buffer));
-			console.log(i);
-			console.log(argv_pointers[i]);
-			console.log(stack_pointer);
 		}
 
 		// Argc (which is 64 bit)
 		stack_pointer -= 8;
 		this.unicorn.mem_write(stack_pointer, new Uint8Array(new ElfUInt64(argv_pointers.length).chunks.buffer));
-		console.log(argv_pointers.length);
-		console.log(stack_pointer);
 		
 		mem_log(this.unicorn, stack_pointer, 20)
 
