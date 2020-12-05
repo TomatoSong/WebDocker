@@ -44,7 +44,7 @@ export default class Process {
 		for (var i = 0; i < string_array.length - 1; i ++)
 			this.write_to_term(string_array[i]);
 
-		this.wite_to_term(string_array[string_array.length - 1]);
+		this.write_to_term(string_array[string_array.length - 1]);
 	}
 
 	brk()
@@ -84,7 +84,7 @@ export default class Process {
 		this.unicorn.emu_stop();
 
 		if (rdi.num() != 0)
-			this.write_to_term("WARN: program exit with code " + rdi.num() + ".");
+			this.write_to_term("WARN: program exit with code " + rdi.num() + ".\r\n");
 	}
 
 	arch_prctl()
@@ -157,7 +157,7 @@ export default class Process {
 	}
 	
 	hook_mem_issue() {
-		document_log("MEMORY Issue")
+		document_log("MEMORY Issue");
 		let rip = this.unicorn.reg_read_i64(uc.X86_REG_RIP);
 		reg_log(this.unicorn);
 	}
@@ -238,15 +238,13 @@ export default class Process {
 
 		// Environment string
 		// Empty for now
-
-		let command = this.args;
-		command.splice(0, 0, this.filename);
+	
 		// Argv strings
-		for (var i = 0; i < command.length; i ++)
+		for (var i = 0; i < this.args.length; i ++)
 		{
 			stack_pointer -= 1; // NULL termination of string
-			stack_pointer -= command[i].length;
-			this.unicorn.mem_write(stack_pointer, new TextEncoder("utf-8").encode(command[i]));
+			stack_pointer -= this.args[i].length;
+			this.unicorn.mem_write(stack_pointer, new TextEncoder("utf-8").encode(this.args[i]));
 			argv_pointers.push(stack_pointer);
 		}
 

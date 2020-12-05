@@ -34,8 +34,6 @@ export default class WebDockerTerminal {
 	resetBuffer() {
 		this.buffer = "";
 		this.cursor = 0;
-		this.term.writeln("");
-		this.prompt();
 	}
 
 	init() {
@@ -60,8 +58,9 @@ export default class WebDockerTerminal {
 
 			if (ev.ctrlKey) 
 			{
-				this.onCtrl(ev.keyCode);
 				this.resetBuffer();
+				this.onCtrl(ev.keyCode);
+				this.prompt();	
 				return;
 			}
 			
