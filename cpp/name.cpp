@@ -3,14 +3,27 @@
 int
 main(int argc, char *argv[])
 {
-	int count = 0;
+	const char* space = " ";
+	const char* new_line = "\n";
 
-	while (argv[0][count] != '\0')
+	for (int i = 0; i < argc; i ++)
 	{
-		count ++;
+		int count = 0;
+
+		while (argv[i][count] != '\0')
+		{
+			count ++;
+		}
+		
+		write(1, argv[i], count);
+
+		if (i < argc - 1)
+		{
+			write(1, space, 1);
+		}
 	}
 
-	write(1, argv[0], count);
+	write(1, new_line, 1);
 
 	return 0;
 }
