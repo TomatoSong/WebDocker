@@ -34,8 +34,14 @@ export default class Process {
 	
 	write()
 	{
+		const rdi = unicorn.reg_read_i64(uc.X86_REG_RDI);
 		const rsi = this.unicorn.reg_read_i64(uc.X86_REG_RSI);
 		const rdx = this.unicorn.reg_read_i64(uc.X86_REG_RDX);
+		
+			if (rdi.num() != 1 && rdi.num() != 2)
+	{
+		return;
+	}
 
 		const buffer = this.unicorn.mem_read(rsi, rdx.num());
 		const string = new TextDecoder("utf-8").decode(buffer);
