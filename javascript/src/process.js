@@ -34,14 +34,12 @@ export default class Process {
 	
 	write()
 	{
-		const rdi = unicorn.reg_read_i64(uc.X86_REG_RDI);
+		const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
 		const rsi = this.unicorn.reg_read_i64(uc.X86_REG_RSI);
 		const rdx = this.unicorn.reg_read_i64(uc.X86_REG_RDX);
 		
 		if (rdi.num() != 1 && rdi.num() != 2)
-		{
 			return;
-		}
 
 		const buffer = this.unicorn.mem_read(rsi, rdx.num());
 		const string = new TextDecoder("utf-8").decode(buffer);
@@ -50,7 +48,7 @@ export default class Process {
 		for (var i = 0; i < string_array.length - 1; i ++)
 			this.write_to_term(string_array[i]);
 
-		this.wite_to_term(string_array[string_array.length - 1]);
+		this.write_to_term(string_array[string_array.length - 1]);
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, rdx.num());
 	}
 
@@ -69,12 +67,14 @@ export default class Process {
 			return;
 		}
 
-		if (Math.floor((rdi.num()-1) / 4096) > Math.floor((this.heap_addr-1) / 4096)) {
-		// Missing Page
+		if (Math.floor((rdi.num()-1) / 4096) > Math.floor((this.heap_addr-1) / 4096)) 
+		{
+			// Missing Page
 			let map_base = (Math.floor((this.heap_addr-1) / 4096)+1)*4096;
 			let size = Math.ceil(rdi.num() / 4096)*4096;
 			this.unicorn.mem_map(map_base, size-map_base, uc.PROT_ALL);
 		}
+
 		this.heap_addr = rdi.num();
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, this.heap_addr);
 	}
@@ -110,7 +110,8 @@ export default class Process {
 		//unicorn.reg_write(uc.X86_REG_MSR, fsmsr);
 		//console.log(unicorn.reg_read(uc.X86_REG_MSR, 12))
 		
-		if (this.continue_arch_prctl_rip == rip.num()) {
+		if (this.continue_arch_prctl_rip == rip.num()) 
+		{
 			document_log(["Returning", rdi.hex(), rsi.hex(), rip.hex()])
 			this.continue_arch_prctl_flag = 0;
 			this.continue_arch_prctl_rip = 0;
@@ -163,13 +164,14 @@ export default class Process {
 		this.system_call_dictionary[rax.num()]();
 	}
 	
-	hook_mem_issue() {
+	hook_mem_issue()
+	{
 		document_log("MEMORY Issue");
-		let rip = this.unicorn.reg_read_i64(uc.X86_REG_RIP);
 		reg_log(this.unicorn);
 	}
     
-    write_mem(){
+	write_mem()
+	{
 		// Create ELF file object
 		let elf = new Elf(this.file);
 
@@ -268,8 +270,8 @@ export default class Process {
 		// NULL that ends argv[]
 		stack_pointer -= 8;
 
-		// Argv pointers
-		for (var i = 0; i < argv_pointers.length; i ++)
+		// Argv pointers (reversed)
+		for (var i = argv_pointers.length - 1; i >= 0; i --)
 		{
 			stack_pointer -= 8;
 			this.unicorn.mem_write(stack_pointer, new Uint8Array(new ElfUInt64(argv_pointers[i]).chunks.buffer));
