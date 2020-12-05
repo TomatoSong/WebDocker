@@ -1,11 +1,3 @@
-var term = new Terminal();
-var fit_addon = new FitAddon.FitAddon();
-
-term.loadAddon(fit_addon);
-term.open(document.getElementById("container_terminal"));
-term.focus()
-fit_addon.fit();
-
 String.prototype.insert = function(idx, str)
 {
 	return this.slice(0, idx) + str + this.slice(idx);
@@ -16,259 +8,140 @@ String.prototype.remove = function(idx)
 	return this.slice(0, idx - 1) + this.slice(idx);
 };
 
-let source = "WebDocker$ ";
+export default class WebDockerTerminal {
+	constructor(onCmd, onCtrl) {
+		this.onCmd = onCmd;
+		this.onCtrl = onCtrl;
+		this.term= new Terminal();
+		this.fit_addon = new FitAddon.FitAddon();
+		this.source = "WebDocker$ ";
 
-function terminal()
-{
-    if (term._initialized)
-	{
-  		return;
-    }
-	
-    term.prompt = () => {
-		term.write(source);
-    };
+		this.init();
 
-    term.writeln("Welcome to WebDocker!");
-	term.writeln("Use docker run <img> <cmd> to run a docker image.")
-	term.writeln("")
-	term.prompt();	
+		this.buffer = "";
+		this.cursor = 0;
+		this.ignoreCode = [38, 40]; // 38: arrow up, 40: arrow down
+	}
 
-    buffer = "";
-    cursor = 0;
-    ignoreCode = [38, 40]; // 38: arrow up, 40: arrow down
+	prompt() {
+		this.term.write(this.source);
+	}
 
-    term.onKey((e) => {
-		const ev = e.domEvent;
-		const printable = !ev.altKey && !ev.ctrlKey && !ev.metaKey;
+	write(str) {
+		this.term.write(str);
+	}
 
-		if (ev.ctrlKey)
-		{
-			switch (ev.keyCode)
+	resetBuffer() {
+		this.buffer = "";
+		this.cursor = 0;
+	}
+
+	init() {
+		this.term.loadAddon(this.fit_addon);
+		this.term.open(document.getElementById("container_terminal"));
+		this.term.focus()
+		this.fit_addon.fit();
+
+		if (this.term._initialized)
+			return;
+
+		this.term.writeln("Welcome to WebDocker!");
+		this.term.writeln("Use docker run <img> <cmd> to run a docker image.");
+		this.term.writeln("");
+		this.prompt();	
+	}
+
+	start() {
+		this.term.onKey((e) => {
+			const ev = e.domEvent;
+			const printable = !ev.altKey && !ev.ctrlKey && !ev.metaKey;
+
+			if (ev.ctrlKey) 
 			{
-				case 67: // Ctrl+C
+				this.resetBuffer();
+				this.onCtrl(ev.keyCode);
+				this.prompt();	
+				return;
+			}
+			
+			if (this.ignoreCode.includes(ev.keyCode) || !printable)
+				return;
+			
+			switch (ev.keyCode){
+				case 13: // enter
 				{
-					term.writeln("")
-					term.writeln("INFO: received signal: \"Ctrl+C\".")
-					term.prompt();
-					buffer = "";
-					cursor = 0;
-
+					if (this.buffer != "")
+						this.onCmd(this.buffer);
+					this.resetBuffer();
 					break;
 				}
-				case 90: // Ctrl+Z
+				case 8: // backspace
 				{
-					term.writeln("")
-					term.writeln("INFO: received signal: \"Ctrl+Z\".")
-					term.prompt();
-					buffer = "";
-					cursor = 0;
-
+					if (this.cursor > 0)
+					{
+						this.buffer = this.buffer.remove(this.cursor);
+						this.term.write('\b\x1b[1P');
+						this.cursor --;
+					}
 					break;
 				}
-				case 220: // Ctrl+\
+				case 37: // arrow left
 				{
-					term.writeln("")
-					term.writeln("INFO: received signal: \"Ctrl+\\\".")
-					term.prompt();
-					buffer = "";
-					cursor = 0;
+					if ((this.cursor + this.source.length) >= this.term.cols && 
+						(this.cursor + this.source.length) % this.term.cols == 0)
+						{
+							this.term.write(`\x1b[A`);
+							this.term.write(`\x1b[${this.term.cols}G`);
+						}
+					else if (this.cursor > 0)
+						this.term.write('\b');
+					else
+						return;
 
+					this.cursor --;
+					break;
+				}
+				case 39: // arrow right
+				{
+					if ((this.cursor + this.source.length) % this.term.cols == this.term.cols - 1)
+						this.term.write("\r\n");
+					else if (this.cursor < this.buffer.length)
+						this.term.write(`\x1b[1C`);
+					else
+						return;
+
+					this.cursor ++;
 					break;
 				}
 				default:
 				{
-					break;
-				}
-			}
-
-			return;
-		}
-
-		if (ignoreCode.includes(ev.keyCode) || !printable)
-		{
-			return;
-		}
-
-		switch (ev.keyCode)
-		{
-			case 13: // enter
-			{
-				term.writeln("")
-				buffer_array = buffer.split(" ")
-
-				if (buffer === "fg")
-				{
-					term.writeln("INFO: received command: \"fg\".")
-					term.prompt();
-				}
-				else if (buffer === "jobs")
-				{
-					term.writeln("INFO: received command: \"jobs\".")
-					term.prompt();
-				}
-				else if (buffer_array[0] == "docker")
-				{
-					if (!buffer_array[1] || buffer_array[1] != "run")
+					if (this.cursor == this.buffer.length)
 					{
-						term.writeln("ERROR: invalid docker command.")
-						term.prompt();
-					}
-					else
-					{
-						if (!buffer_array[2] || buffer_array[2] == "")
+						if ((this.buffer.length + this.source.length) % this.term.cols == this.term.cols - 1)
 						{
-							term.writeln("ERROR: invalid docker image name.")
-							term.prompt();
+							this.term.write(e.key);
+							this.buffer += e.key;
+							this.term.write("\r\n");
 						}
 						else
 						{
-							var command = buffer_array.slice(3);
-
-							if (command.length > 0)
-							{
-								command[0] = command[0].replace(/"/g, "");
-								command[0] = command[0].replace(/'/g, "");
-								command[command.length - 1] = command[
-									command.length - 1].replace(/"/g, "");
-								command[command.length - 1] = command[
-									command.length - 1].replace(/'/g, "");
-							}
-
-							if (command.length > 1)
-							{
-								command[1] = command[1].replace(/"/g, "");
-								command[1] = command[1].replace(/'/g, "");
-							}
-
-							open_image(buffer_array[2], command)
-								.then(file_system => elf_loader(file_system))
-								.then(() => term.prompt());
+							this.term.write(e.key);
+							this.buffer += e.key;
 						}
 					}
-				}
-				else if (buffer_array[0] == "")
-				{
-					term.prompt();
-				}
-				else
-				{
-					var command = buffer_array;
-
-					if (command.length > 0)
+					else if (this.cursor < this.buffer.length)
 					{
-						command[0] = command[0].replace(/"/g, "");
-						command[0] = command[0].replace(/'/g, "");
-						command[command.length - 1] = command[
-							command.length - 1].replace(/"/g, "");
-						command[command.length - 1] = command[
-							command.length - 1].replace(/'/g, "");
-					}
-
-					if (command.length > 1)
-					{
-						command[1] = command[1].replace(/"/g, "");
-						command[1] = command[1].replace(/'/g, "");
-					}
-
-					fetch("bin/" + command[0])
-						.then(response => response.arrayBuffer())
-						.then(file => execve(command, file))
-						.then(() => term.prompt())
-						.catch(function() {
-							term.writeln("ERROR: " + command[0] +
-										 ": command not found.");
-							term.prompt();
-						});
-				}
-				
-			 	buffer = "";
-				cursor = 0;
-
-				break;
-			}
-			case 8: // backspace
-			{
-				if (cursor > 0)
-				{
-					buffer = buffer.remove(cursor);
-					term.write('\b\x1b[1P');
-					cursor --;
-				}
-
-				break;
-			}
-			case 37: // arrow left
-			{
-				if ((cursor + source.length) >= term.cols && 
-					(cursor + source.length) % term.cols == 0)
-				{
-					term.write(`\x1b[A`);
-					term.write(`\x1b[${term.cols}G`);
-				}
-				else if (cursor > 0)
-				{
-					term.write('\b');
-				}
-				else
-				{
-					return;
-				}
-
-				cursor --;
-
-				break;
-			}
-			case 39: // arrow right
-			{
-				if ((cursor + source.length) % term.cols == term.cols - 1)
-				{
-					term.write("\r\n");
-				}
-				else if (cursor < buffer.length)
-				{
-					term.write(`\x1b[1C`);
-				}
-				else
-				{
-					return;
-				}
-
-				cursor ++;
-
-				break;
-			}
-			default:
-			{
-				if (cursor == buffer.length)
-				{
-					if ((buffer.length + source.length) % term.cols == term.cols - 1)
-					{
-						term.write(e.key);
-						buffer += e.key;
-						term.write("\r\n");
+						this.term.write(`\x1b[1@`);
+						this.term.write(e.key);
+						this.buffer = this.buffer.insert(this.cursor, e.key);
 					}
 					else
-					{
-						term.write(e.key);
-						buffer += e.key;
-					}
-				}
-				else if (cursor < buffer.length)
-				{
-					term.write(`\x1b[1@`);
-					term.write(e.key);
-					buffer = buffer.insert(cursor, e.key);
-				}
-				else
-				{
-					return;
-				}
+						return;
 
-				cursor ++;
-
-				break;
+					this.cursor ++;
+					break;
+				}
 			}
-		}
-    });
+		})
+	}
 }
