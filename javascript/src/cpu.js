@@ -51,6 +51,7 @@ export default class Process {
 			this.write_to_term(string_array[i]);
 
 		this.wite_to_term(string_array[string_array.length - 1]);
+			unicorn.reg_write_i64(uc.X86_REG_RAX, rdx.num());
 	}
 
 	brk()
