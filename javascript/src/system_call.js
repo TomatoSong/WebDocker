@@ -29,9 +29,12 @@ export default class SystemCall
 			0: this.read.bind(this),
 			1: this.write.bind(this),
 			12: this.brk.bind(this),
+			13: this.rt_sigaction.bind(this),
+			16: this.ioctl.bind(this),
 			39: this.getpid.bind(this),
-			57: this.fork.bind(this),
+			56: this.clone.bind(this),
 			60: this.exit.bind(this),
+			61: this.wait4.bind(this),
 			158: this.arch_prctl.bind(this),
 			186: this.gettid.bind(this),
 			218: this.set_tid_address.bind(this),
@@ -101,6 +104,25 @@ export default class SystemCall
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, rdx.num());
 	}
 
+	stat()
+	{
+		const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
+
+		let pointer = rdi;
+		let character = '';
+		let path_name = "";
+
+		while (character.toString() != '\0')
+		{
+			character = this.unicorn.mem_read(pointer, 1);
+			character = new TextDecoder("utf-8").decode(character);
+			path_name += character;
+			pointer += 1;
+		}
+
+		// TODO handle this
+	}
+
 	brk()
 	{
 		this.logger.log_to_document("BRK");
@@ -129,13 +151,29 @@ export default class SystemCall
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, this.heap_addr);
 	}
 
+	rt_sigaction()
+	{
+		this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
+	}
+
+	ioctl()
+	{
+	}
+
 	getpid()
 	{
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
 	}
 
+	clone()
+	{
+		// TODO: handle this
+		this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
+	}
+
 	fork()
 	{
+		// TODO: update this
 		// Get mem state
 		var mem_lower = original.mem_read(0, 0x11f000);
 		var mem_higher = original.mem_read(0x800000000000 - 8192, 8192)
@@ -201,6 +239,12 @@ export default class SystemCall
 		{
 			this.terminal.writeln("WARN: program exit with code " + rdi.num() + ".");
 		}
+	}
+
+	wait4()
+	{
+		// TODO: handle this
+		this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
 	}
 
 	arch_prctl()
