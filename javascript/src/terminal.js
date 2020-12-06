@@ -16,7 +16,9 @@ export default class WebDockerTerminal
 	constructor()
 	{
 		this.term = new Terminal();
-		this.file_system = new FileSystem();
+		
+		
+		this.file_system = new FileSystem(localStorage.registry_url, localStorage.registry_proxy, localStorage.username, localStorage.password);
 		this.fit_addon = new FitAddon.FitAddon();
 
 		this.trapped = -1;

@@ -210,7 +210,10 @@ const Container = (function() {
   class _CrossOriginRequest {
 
     static wrap(url) {
-      const _PROXY_PREFIX = 'https://www.simonyu.net:8080/';
+    let _PROXY_PREFIX = 'https://www.simonyu.net:8080/';
+    if ( localStorage.registry_proxy) {
+         _PROXY_PREFIX = localStorage.registry_proxy
+    }
       return new _CrossOriginRequest(_PROXY_PREFIX + url);
     }
 

@@ -1,12 +1,23 @@
 export default class FileSystem
 {
-	constructor()
+	constructor(registry_url = 'www.simonyu.net:5000' , registry_proxy = "", registry_username = "", registry_password = "")
 	{
 		this.file_system_dictionary = {};
 		this.path = "";
 		this.command = "";
 		this.file_name = "";
 		this.file = [];
+		
+		this.registry_url = registry_url;
+		this.registry_proxy = registry_proxy;
+		
+		if (registry_username.length == 0) {
+		  this.registry_username = registry_username
+		  this.registry_password = registry_password
+		} else {
+		  this.registry_username =  "webdocker";
+		  this.registry_password = "@webdocker";
+		}
 	}
 
 	open_file()
@@ -75,10 +86,13 @@ export default class FileSystem
 		}
 
 		// Opens Docker Hub repository
-		const repo = new Container.Repository('www.simonyu.net:5000', image_name.split(":")[0]);
+		const repo = new Container.Repository(this.registry_url, image_name.split(":")[0]);
 
 		// Set repository credentials
-		repo.setCredentials("webdocker", "@Webdocker");
+		if (this.registry_username.length > 0) {
+				repo.setCredentials(this.registry_username, this.registry_password);
+		}
+
 
 		// Get image
 		const image = await repo.Image(tag);

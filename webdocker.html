@@ -22,5 +22,49 @@
 	<p>
 	  <span id="logger">Waiting for active sessions...</span>
 	</p>
+	
+	<h2>Registry Setting</h2>
+	<p>
+	Registry URL
+	    <input id="registry_url" type=text value="" />
+	registry.hub.docker.com
+	</p>
+	<p>
+	Registry CORS Proxy
+	    <input id="registry_proxy" type=text value="" />
+	https://cors-anywhere.herokuapp.com/
+	</p>
+	<p>
+	Registry Username (leave black in anonymous mode)
+	    <input id="registry_username" type=text value="" />
+	</p>
+	<p>
+	Registry Password (leave black in anonymous mode)
+	    <input id="registry_password" type=password value="" />
+	</p>
+	
+	<input type="submit" onclick="set_registry()">
+	<input type="submit" value="clear settings" onclick="clear_registry()">
+	
+	<p>
+	Image file to execute (export using docker save)
+		<input id="image_file" type="file">
+	</p>
+	<script>
+	    function set_registry () {
+	        localStorage.registry_url = document.getElementById("registry_url").value;
+	        localStorage.registry_proxy = document.getElementById("registry_proxy").value;
+	        localStorage.registry_username = document.getElementById("registry_username").value;
+	        localStorage.registry_password = document.getElementById("registry_password").value;
+	        location.reload()
+	    }
+	    
+	    function clear_registry() {localStorage.clear(); location.reload();}
+	    
+	    if (localStorage.registry_url) document.getElementById("registry_url").value = localStorage.registry_url;
+	    if (localStorage.registry_proxy) document.getElementById("registry_proxy").value = localStorage.registry_proxy;
+	    if (localStorage.registry_username) document.getElementById("registry_username").value = localStorage.registry_username;
+	    if (localStorage.registry_password) document.getElementById("registry_password").value = localStorage.registry_password;
+	</script>
   </body>
 </html>
