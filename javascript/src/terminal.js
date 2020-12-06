@@ -19,7 +19,11 @@ export default class WebDockerTerminal
 		this.file_system = new FileSystem();
 		this.fit_addon = new FitAddon.FitAddon();
 
+		this.trapped = -1;
+		this.buffer = "";
+		this.cursor = 0;
 		this.source = "WebDocker$ ";
+		this.process = null;
 		this.ignoreCode = [38, 40]; // 38: arrow up, 40: arrow down
 
 		this.init();
@@ -126,8 +130,14 @@ export default class WebDockerTerminal
 
 					this.file_system.open(buffer_array[2], command)
 						.then(() => {
-							let process = new Process(this, this.file_system);
-							process.execute();
+							this.process = new Process(this, this.file_system);
+							this.process.execute();
+
+							if (this.trapped == 0)
+							{
+								return;
+							}
+
 							this.prompt();
 						})
 						.catch(error => {
@@ -168,8 +178,14 @@ export default class WebDockerTerminal
 					this.file_system.file_name = command[0];
 					this.file_system.file = file;
 
-					let process = new Process(this, this.file_system);
-					process.execute();
+					this.process = new Process(this, this.file_system);
+					this.process.execute();
+
+					if (this.trapped == 0)
+					{
+						return;
+					}
+
 					this.prompt();
 				})
 				.catch(() => {
@@ -219,7 +235,17 @@ export default class WebDockerTerminal
 			{
 				case 13: // enter
 				{
-					this.on_cmd(this.buffer);
+					if (this.trapped == 0)
+					{
+						this.writeln("");
+						this.process.unicorn.emu_start(this.process.system_call.read_rip,
+													   0, 0);
+					}
+					else
+					{
+						this.on_cmd(this.buffer);
+					}
+
 					this.reset_buffer();
 
 					break;

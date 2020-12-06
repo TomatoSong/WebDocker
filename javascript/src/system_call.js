@@ -17,6 +17,7 @@ export default class SystemCall
 		this.continue_arch_prctl_rcx = 0;
 		this.continue_arch_prctl_rdx = 0;
 		this.continue_arch_prctl_mem = 0;
+		this.read_rip = 0;
 
 		this.unicorn.hook_add(uc.HOOK_INSN, this.hook_system_call.bind(this), {}, 1, 0,
 							  uc.X86_INS_SYSCALL);
@@ -25,6 +26,7 @@ export default class SystemCall
 							  {}, 1, 0, 0);
 
 		this.system_call_dictionary = {
+			0: this.read.bind(this),
 			1: this.write.bind(this),
 			12: this.brk.bind(this),
 			39: this.getpid.bind(this),
@@ -35,6 +37,39 @@ export default class SystemCall
 			218: this.set_tid_address.bind(this),
 			231: this.exit_group.bind(this)
 		};
+	}
+
+	read()
+	{
+		const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
+		const rsi = this.unicorn.reg_read_i64(uc.X86_REG_RSI);
+		const rdx = this.unicorn.reg_read_i64(uc.X86_REG_RDX);
+		const rip = this.unicorn.reg_read_i64(uc.X86_REG_RIP);
+
+		if (rdi.num() != 0)
+		{
+			return;
+		}
+
+		if (this.terminal.trapped == 0)
+		{
+			let buffer = this.terminal.buffer;
+
+			if (rdx.num() < buffer.length)
+			{
+				buffer = buffer.slice(0, rdx.num());
+			}
+
+			this.unicorn.mem_write(rsi, new TextEncoder("utf-8").encode(buffer));
+			this.unicorn.reg_write_i64(uc.X86_REG_RAX, buffer.length);
+			this.terminal.trapped = -1;
+		}
+		else
+		{
+			this.terminal.trapped = 0;
+			this.read_rip = rip;
+			this.unicorn.emu_stop();
+		}
 	}
 
 	write()
@@ -233,6 +268,7 @@ export default class SystemCall
 			this.terminal.writeln("ERROR: missing system call: " 
 								  + system_call_table[rax.num()] +
 								  " (" + rax.num() + ")" + ".");
+
             return;
         }
 

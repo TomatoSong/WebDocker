@@ -47,16 +47,25 @@ export default class Logger
 		var rip = unicorn.reg_read_i64(uc.X86_REG_RIP);
 		var eflags = unicorn.reg_read_i32(uc.X86_REG_EFLAGS);
 
-		this.log_to_document("[INFO]: register[rax]: " + rax.hex() + " (hex), " + rax + " (uint)");
-		this.log_to_document("[INFO]: register[rbx]: " + rbx.hex() + " (hex), " + rbx + " (uint)");
-		this.log_to_document("[INFO]: register[rcx]: " + rcx.hex() + " (hex), " + rcx + " (uint)");
-		this.log_to_document("[INFO]: register[rdx]: " + rdx.hex() + " (hex), " + rdx + " (uint)");
-		this.log_to_document("[INFO]: register[rsi]: " + rsi.hex() + " (hex), " + rsi + " (uint)");
-		this.log_to_document("[INFO]: register[rdi]: " + rdi.hex() + " (hex), " + rdi + " (uint)");
-		this.log_to_document("[INFO]: register[rbp]: " + rbp.hex() + " (hex), " + rbp + " (uint)");
-		this.log_to_document("[INFO]: register[rsp]: " + rsp.hex() + " (hex), " + rsp + " (uint)");
-		this.log_to_document("[INFO]: register[rip]: " + rip.hex() + " (hex), " + rip + " (uint)");
-		this.log_to_document("[INFO]: register[efl]: " + eflags.hex() + " (hex), " +
-						eflags + " (uint)");
+		this.log_to_document("[INFO]: register[rax]: " +
+							 rax.hex() + " (hex), " + rax + " (uint)");
+		this.log_to_document("[INFO]: register[rbx]: " +
+							 rbx.hex() + " (hex), " + rbx + " (uint)");
+		this.log_to_document("[INFO]: register[rcx]: " +
+							 rcx.hex() + " (hex), " + rcx + " (uint)");
+		this.log_to_document("[INFO]: register[rdx]: " +
+							 rdx.hex() + " (hex), " + rdx + " (uint)");
+		this.log_to_document("[INFO]: register[rsi]: " +
+							 rsi.hex() + " (hex), " + rsi + " (uint)");
+		this.log_to_document("[INFO]: register[rdi]: " +
+							 rdi.hex() + " (hex), " + rdi + " (uint)");
+		this.log_to_document("[INFO]: register[rbp]: " +
+							 rbp.hex() + " (hex), " + rbp + " (uint)");
+		this.log_to_document("[INFO]: register[rsp]: " +
+							 rsp.hex() + " (hex), " + rsp + " (uint)");
+		this.log_to_document("[INFO]: register[rip]: " +
+							 rip.hex() + " (hex), " + rip + " (uint)");
+		this.log_to_document("[INFO]: register[efl]: " +
+							 eflags.hex() + " (hex), " + eflags + " (uint)");
 	}
 }
