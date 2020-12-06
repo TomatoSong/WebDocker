@@ -55,9 +55,14 @@ export default class SystemCall
 		{
 			let buffer = this.terminal.buffer;
 
-			if (rdx.num() < buffer.length)
+			if (rdx.num() - 1 < buffer.length)
 			{
-				buffer = buffer.slice(0, rdx.num());
+				buffer = buffer.slice(0, rdx.num() - 1);
+			}
+
+			if (buffer[buffer.length - 1] != "\n")
+			{
+				buffer += "\n"
 			}
 
 			this.unicorn.mem_write(rsi, new TextEncoder("utf-8").encode(buffer));
