@@ -81,7 +81,6 @@ export default class WebDockerTerminal
 
 	on_cmd(buffer)
 	{
-		this.writeln("");
 		let buffer_array = buffer.split(" ");
 
 		if (buffer === "fg")
@@ -235,11 +234,13 @@ export default class WebDockerTerminal
 			{
 				case 13: // enter
 				{
+					this.writeln("");
+
 					if (this.trapped == 0)
 					{
-						this.writeln("");
 						this.process.unicorn.emu_start(this.process.system_call.read_rip,
 													   0, 0);
+						this.prompt();
 					}
 					else
 					{
