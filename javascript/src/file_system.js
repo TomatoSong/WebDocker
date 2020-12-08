@@ -1,6 +1,9 @@
-export default class FileSystem
+export default class DockerImage
 {
-	constructor(registry_url = 'www.simonyu.net:5000' , registry_proxy = "", registry_username = "", registry_password = "")
+	constructor(registry_url = 'www.simonyu.net:5000' , 
+				registry_proxy = "", 
+				registry_username = "", 
+				registry_password = "")
 	{
 		this.file_system_dictionary = {};
 		this.path = "";

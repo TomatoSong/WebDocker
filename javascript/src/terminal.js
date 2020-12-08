@@ -1,4 +1,4 @@
-import FileSystem from "./file_system.js"
+import DockerImage from "./file_system.js"
 import Process from "./process.js"
 
 String.prototype.insert = function(idx, str)
@@ -15,17 +15,20 @@ export default class WebDockerTerminal
 {
 	constructor()
 	{
+		this.docker_image = new DockerImage(localStorage.registry_url, 
+											localStorage.registry_proxy, 
+											localStorage.username, 
+											localStorage.password);
+
 		this.term = new Terminal();
-		
-		
-		this.file_system = new FileSystem(localStorage.registry_url, localStorage.registry_proxy, localStorage.username, localStorage.password);
 		this.fit_addon = new FitAddon.FitAddon();
+
+		this.processes = {};
 
 		this.trapped = -1;
 		this.buffer = "";
 		this.cursor = 0;
 		this.source = "WebDocker$ ";
-		this.process = null;
 		this.ignoreCode = [38, 40]; // 38: arrow up, 40: arrow down
 
 		this.init();
@@ -81,6 +84,26 @@ export default class WebDockerTerminal
 		}
 	}
 
+	format_cmd(command)
+	{
+		if (command.length > 0)
+		{
+			command[0] = command[0].replace(/"/g, "");
+			command[0] = command[0].replace(/'/g, "");
+			command[command.length - 1] = command[
+				command.length - 1].replace(/"/g, "");
+			command[command.length - 1] = command[
+				command.length - 1].replace(/'/g, "");
+		}
+
+		if (command.length > 1)
+		{
+			command[1] = command[1].replace(/"/g, "");
+			command[1] = command[1].replace(/'/g, "");
+		}
+		return command;
+	}
+
 	on_cmd(buffer)
 	{
 		let buffer_array = buffer.split(" ");
@@ -111,28 +134,15 @@ export default class WebDockerTerminal
 				}
 				else
 				{
-					var command = buffer_array.slice(3);
-
-					if (command.length > 0)
-					{
-						command[0] = command[0].replace(/"/g, "");
-						command[0] = command[0].replace(/'/g, "");
-						command[command.length - 1] = command[
-							command.length - 1].replace(/"/g, "");
-						command[command.length - 1] = command[
-							command.length - 1].replace(/'/g, "");
-					}
-
-					if (command.length > 1)
-					{
-						command[1] = command[1].replace(/"/g, "");
-						command[1] = command[1].replace(/'/g, "");
-					}
-
-					this.file_system.open(buffer_array[2], command)
+					let command = buffer_array.slice(3);
+					command = this.format_cmd(command);
+					console.log(this.docker_image);
+					this.docker_image.open(buffer_array[2], command)
 						.then(() => {
-							this.process = new Process(this, this.file_system);
-							this.process.execute();
+							let pid = this.new_pid();
+							let p = new Process(pid, this, this.docker_image);
+							this.processes[pid] = p;
+							p.execute();
 
 							if (this.trapped == 0)
 							{
@@ -154,33 +164,20 @@ export default class WebDockerTerminal
 		}
 		else
 		{
-			var command = buffer_array;
-
-			if (command.length > 0)
-			{
-				command[0] = command[0].replace(/"/g, "");
-				command[0] = command[0].replace(/'/g, "");
-				command[command.length - 1] = command[
-					command.length - 1].replace(/"/g, "");
-				command[command.length - 1] = command[
-					command.length - 1].replace(/'/g, "");
-			}
-
-			if (command.length > 1)
-			{
-				command[1] = command[1].replace(/"/g, "");
-				command[1] = command[1].replace(/'/g, "");
-			}
+			let command = buffer_array;
+			command = this.format_cmd(command);
 
 			fetch("bin/" + command[0])
 				.then(response => response.arrayBuffer())
 				.then(file => {
-					this.file_system.command = command;
-					this.file_system.file_name = command[0];
-					this.file_system.file = file;
+					this.docker_image.command = command;
+					this.docker_image.file_name = command[0];
+					this.docker_image.file = file;
 
-					this.process = new Process(this, this.file_system);
-					this.process.execute();
+					let pid = this.new_pid();
+					let p = new Process(pid, this, this.docker_image);
+					this.processes[pid] = p;
+					p.execute();
 
 					if (this.trapped == 0)
 					{
@@ -189,11 +186,25 @@ export default class WebDockerTerminal
 
 					this.prompt();
 				})
-				.catch(() => {
+				.catch((error) => {
 					this.writeln("ERROR: " + command[0] + ": command not found.");
+					console.log(error);
+					// this.writeln("ERROR: " + error._errorMessage);
 					this.prompt();
 				});
 		}
+	}
+
+	new_pid()
+	{
+		console.log(this.processes);
+		if (Object.keys(this.processes).length == 0)
+		{
+			console.log("new pid is 1");
+			return 1;
+		}
+		console.log(Object.keys(this.processes).length + 1);
+		return Object.keys(this.processes).length + 1;
 	}
 
 	init()
@@ -240,7 +251,7 @@ export default class WebDockerTerminal
 
 					if (this.trapped == 0)
 					{
-						this.process.unicorn.emu_start(this.process.system_call.read_rip,
+						this.processes.unicorn.emu_start(this.processes.system_call.read_rip,
 													   0, 0);
 						this.prompt();
 					}

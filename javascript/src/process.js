@@ -3,24 +3,31 @@ import SystemCall from "./system_call.js";
 
 export default class Process
 {
-    constructor(terminal, file_system)
+    constructor(pid, terminal, image)
 	{
+		this.pid = pid;
+		console.log(this.pid);
 		this.terminal = terminal;
-		this.file_system = file_system;
+		this.image = image;
+
+		this.filename = this.image.file_name;
+		this.command = this.image.command;
+		this.file = this.image.file;
 
 		this.logger = new Logger();
 		this.unicorn = new uc.Unicorn(uc.ARCH_X86, uc.MODE_64);
-		this.system_call = new SystemCall(this.unicorn, this.terminal, this.logger);
+		this.system_call = new SystemCall(this, this.unicorn, 
+										  this.terminal, this.logger);
         this.unicorn.set_integer_type(ELF_INT_OBJECT);
 
 		this.elf_entry = 0;
 		this.elf_end = 0;
 	}
-    
+   
 	load_elf()
 	{
 		// Create ELF file object
-		let elf = new Elf(this.file_system.file);
+		let elf = new Elf(this.image.file);
 
 		// Check if file is ELF
 		if (elf.kind() !== "elf")
@@ -41,7 +48,7 @@ export default class Process
 
 		this.elf_entry = ehdr.e_entry.num();
 		this.system_call.elf_entry = this.elf_entry;
-		this.elf_end = this.file_system.file.byteLength;
+		this.elf_end = this.file.byteLength;
 
 		// Write segments to memory
 		for (let i = 0; i < ehdr.e_phnum.num(); i ++)
@@ -55,7 +62,7 @@ export default class Process
 
 			const seg_start = phdr.p_offset.num();
 			const seg_end = seg_start + phdr.p_filesz.num();
-			const seg_data = new Uint8Array(this.file_system.file.slice(seg_start, seg_end));
+			const seg_data = new Uint8Array(this.file.slice(seg_start, seg_end));
 
 			// Map memory for ELF file
 			const seg_size = phdr.p_memsz.num();
@@ -93,20 +100,20 @@ export default class Process
 		stack_pointer -= 8;
 
 		// Program name
-		stack_pointer -= this.file_system.file_name.length;
+		stack_pointer -= this.filename.length;
 		this.unicorn.mem_write(stack_pointer,
-							   new TextEncoder("utf-8").encode(this.file_system.file_name));
+							   new TextEncoder("utf-8").encode(this.filename));
 
 		// Environment string
 		// Empty for now
 	
 		// Argv strings
-		for (var i = 0; i < this.file_system.command.length; i ++)
+		for (var i = 0; i < this.command.length; i ++)
 		{
 			stack_pointer -= 1; // NULL termination of string
-			stack_pointer -= this.file_system.command[i].length;
+			stack_pointer -= this.command[i].length;
 			this.unicorn.mem_write(stack_pointer,
-								   new TextEncoder("utf-8").encode(this.file_system.command[i]));
+								   new TextEncoder("utf-8").encode(this.command[i]));
 			argv_pointers.push(stack_pointer);
 		}
 
