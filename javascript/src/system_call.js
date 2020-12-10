@@ -48,71 +48,6 @@ export default class SystemCall
 		};
 	}
 
-	execve()
-	{
-		const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
-		const rsi = this.unicorn.reg_read_i64(uc.X86_REG_RSI);
-		const rdx = this.unicorn.reg_read_i64(uc.X86_REG_RDX);
-
-		let ptr = rdi;
-		let c = '';
-		let filename = "";
-
-		while (c.toString() != '\0')
-		{
-			c = this.unicorn.mem_read(ptr, 1);
-			c = new TextDecoder("utf-8").decode(c);
-			filename += c;
-			pointer += 1;
-		}
-		console.log(filename);
-
-		ptr = rsi;
-		c = '';
-		let argv = "";
-
-		while (c.toString() != '\0')
-		{
-			c = this.unicorn.mem_read(ptr, 1);
-			c = new TextDecoder("utf-8").decode(c);
-			argv += c;
-			pointer += 1;
-		}
-		console.log(argv);
-		argv = argv.split(" ");
-		argv.splice(0, 0, filename);
-		console.log(argv.length);
-		
-		let pid = Object.keys(this.terminal.processes).length + 1;
-		let p = new Process(pid, this.terminal, this.terminal.image);
-		p.filename = filename;
-		p.commnad = argv;
-		p.file = this.terminal.image.file_system_dictionary[filename].buffer;
-		p.pid = pid;
-		this.terminal.processes[pid] = p;
-		p.execute();
-		console.log(this.terminal.processes);
-	}
-
-	getppid()
-	{
-
-	}
-
-	getcwd()
-	{
-		const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
-		const rsi = this.unicorn.reg_read_i64(uc.X86_REG_RSI);
-		this.unicorn.mem_write(rdi, new TextEncoder("utf-8").encode("/\0")); 
-		this.unicorn.mem_write(rsi, 1); 
-	}
-
-	uname()
-	{
-		let rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
-		this.unicorn.mem_write(rdi, new TextEncoder("utf-8").encode("Linux")); 
-	}
-
 	read()
 	{
 		const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
@@ -142,10 +77,12 @@ export default class SystemCall
 			this.unicorn.mem_write(rsi, new TextEncoder("utf-8").encode(buffer));
 			this.unicorn.reg_write_i64(uc.X86_REG_RAX, buffer.length);
 			this.terminal.trapped = -1;
+			this.terminal.trapped_pid = -1;
 		}
 		else
 		{
 			this.terminal.trapped = 0;
+			this.terminal.trapped_pid = this.process.pid;
 			this.read_rip = rip;
 			this.unicorn.emu_stop();
 		}
@@ -233,13 +170,16 @@ export default class SystemCall
 
 	getpid()
 	{
-		console.log(this.process.pid);
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, this.process.pid);
 	}
 
 	getuid()
 	{
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
+	}
+
+	getppid()
+	{
 	}
 
 	clone()
@@ -306,6 +246,52 @@ export default class SystemCall
 		return rip;
 	}
 
+	execve()
+	{
+		const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
+		const rsi = this.unicorn.reg_read_i64(uc.X86_REG_RSI);
+		const rdx = this.unicorn.reg_read_i64(uc.X86_REG_RDX);
+
+		let ptr = rdi;
+		let c = '';
+		let filename = "";
+
+		while (c.toString() != '\0')
+		{
+			c = this.unicorn.mem_read(ptr, 1);
+			c = new TextDecoder("utf-8").decode(c);
+			filename += c;
+			pointer += 1;
+		}
+		console.log(filename);
+
+		ptr = rsi;
+		c = '';
+		let argv = "";
+
+		while (c.toString() != '\0')
+		{
+			c = this.unicorn.mem_read(ptr, 1);
+			c = new TextDecoder("utf-8").decode(c);
+			argv += c;
+			pointer += 1;
+		}
+		console.log(argv);
+		argv = argv.split(" ");
+		argv.splice(0, 0, filename);
+		console.log(argv.length);
+		
+		let pid = Object.keys(this.terminal.processes).length + 1;
+		let p = new Process(pid, this.terminal, this.terminal.image);
+		p.filename = filename;
+		p.commnad = argv;
+		p.file = this.terminal.image.file_system_dictionary[filename].buffer;
+		p.pid = pid;
+		this.terminal.processes[pid] = p;
+		p.execute();
+		console.log(this.terminal.processes);
+	}
+
 	exit()
 	{
 		const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
@@ -322,6 +308,22 @@ export default class SystemCall
 	{
 		// TODO: handle this
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
+	}
+
+	
+	uname()
+	{
+		const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
+
+		this.unicorn.mem_write(rdi, new TextEncoder("utf-8").encode("Linux")); 
+	}
+
+	getcwd()
+	{
+		const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
+		const rsi = this.unicorn.reg_read_i64(uc.X86_REG_RSI);
+
+		this.unicorn.mem_write(rdi, new TextEncoder("utf-8").encode("/\0"));
 	}
 
 	arch_prctl()

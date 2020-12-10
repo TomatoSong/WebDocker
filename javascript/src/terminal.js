@@ -1,4 +1,4 @@
-import DockerImage from "./file_system.js"
+import Image from "./image.js"
 import Process from "./process.js"
 
 String.prototype.insert = function(idx, str)
@@ -15,17 +15,14 @@ export default class WebDockerTerminal
 {
 	constructor()
 	{
-		this.docker_image = new DockerImage(localStorage.registry_url, 
-											localStorage.registry_proxy, 
-											localStorage.username, 
-											localStorage.password);
-
 		this.term = new Terminal();
 		this.fit_addon = new FitAddon.FitAddon();
+		this.image = new Image();
 
 		this.processes = {};
 
 		this.trapped = -1;
+		this.trapped_pid = -1;
 		this.buffer = "";
 		this.cursor = 0;
 		this.source = "WebDocker$ ";
@@ -101,6 +98,7 @@ export default class WebDockerTerminal
 			command[1] = command[1].replace(/"/g, "");
 			command[1] = command[1].replace(/'/g, "");
 		}
+
 		return command;
 	}
 
@@ -136,13 +134,15 @@ export default class WebDockerTerminal
 				{
 					let command = buffer_array.slice(3);
 					command = this.format_cmd(command);
-					console.log(this.docker_image);
-					this.docker_image.open(buffer_array[2], command)
+
+					this.image.open(buffer_array[2], command)
 						.then(() => {
-							let pid = this.new_pid();
-							let p = new Process(pid, this, this.docker_image);
-							this.processes[pid] = p;
-							p.execute();
+							let pid = this.get_new_pid();
+							let process = new Process(pid, this, this.image);
+
+							this.processes[pid] = process;
+							process.file.open(process.image.command[0]);
+							process.execute();
 
 							if (this.trapped == 0)
 							{
@@ -166,18 +166,19 @@ export default class WebDockerTerminal
 		{
 			let command = buffer_array;
 			command = this.format_cmd(command);
+			this.image.command = command;
 
 			fetch("bin/" + command[0])
 				.then(response => response.arrayBuffer())
 				.then(file => {
-					this.docker_image.command = command;
-					this.docker_image.file_name = command[0];
-					this.docker_image.file = file;
+					let pid = this.get_new_pid();
+					let process = new Process(pid, this, this.image);
 
-					let pid = this.new_pid();
-					let p = new Process(pid, this, this.docker_image);
-					this.processes[pid] = p;
-					p.execute();
+					this.processes[pid] = process;
+					process.file.file_name_command = command[0];
+					process.file.file_name = command[0];
+					process.file.buffer = file;
+					process.execute();
 
 					if (this.trapped == 0)
 					{
@@ -188,22 +189,18 @@ export default class WebDockerTerminal
 				})
 				.catch((error) => {
 					this.writeln("ERROR: " + command[0] + ": command not found.");
-					console.log(error);
-					// this.writeln("ERROR: " + error._errorMessage);
 					this.prompt();
 				});
 		}
 	}
 
-	new_pid()
+	get_new_pid()
 	{
-		console.log(this.processes);
 		if (Object.keys(this.processes).length == 0)
 		{
-			console.log("new pid is 1");
 			return 1;
 		}
-		console.log(Object.keys(this.processes).length + 1);
+
 		return Object.keys(this.processes).length + 1;
 	}
 
@@ -251,8 +248,8 @@ export default class WebDockerTerminal
 
 					if (this.trapped == 0)
 					{
-						this.processes.unicorn.emu_start(this.processes.system_call.read_rip,
-													   0, 0);
+						this.processes[this.trapped_pid].unicorn.emu_start(
+							this.processes[this.trapped_pid].system_call.read_rip, 0, 0);
 						this.prompt();
 					}
 					else
@@ -298,7 +295,8 @@ export default class WebDockerTerminal
 				}
 				case 39: // arrow right
 				{
-					if ((this.cursor + this.source.length) % this.term.cols == this.term.cols - 1)
+					if ((this.cursor + this.source.length) %
+						this.term.cols == this.term.cols - 1)
 					{
 						this.writeln("");
 					}

@@ -1,3 +1,4 @@
+import File from "./file.js";
 import Logger from "./logger.js";
 import SystemCall from "./system_call.js";
 
@@ -6,28 +7,24 @@ export default class Process
     constructor(pid, terminal, image)
 	{
 		this.pid = pid;
-		console.log(this.pid);
 		this.terminal = terminal;
 		this.image = image;
-
-		this.filename = this.image.file_name;
-		this.command = this.image.command;
-		this.file = this.image.file;
-
-		this.logger = new Logger();
-		this.unicorn = new uc.Unicorn(uc.ARCH_X86, uc.MODE_64);
-		this.system_call = new SystemCall(this, this.unicorn, 
-										  this.terminal, this.logger);
-        this.unicorn.set_integer_type(ELF_INT_OBJECT);
-
 		this.elf_entry = 0;
 		this.elf_end = 0;
+
+		this.unicorn = new uc.Unicorn(uc.ARCH_X86, uc.MODE_64);
+		this.file = new File(this.image);
+		this.logger = new Logger();
+		this.system_call = new SystemCall(this, this.unicorn, 
+										  this.terminal, this.logger);
+
+        this.unicorn.set_integer_type(ELF_INT_OBJECT);
 	}
-   
+	
 	load_elf()
 	{
 		// Create ELF file object
-		let elf = new Elf(this.image.file);
+		let elf = new Elf(this.file.buffer);
 
 		// Check if file is ELF
 		if (elf.kind() !== "elf")
@@ -48,7 +45,7 @@ export default class Process
 
 		this.elf_entry = ehdr.e_entry.num();
 		this.system_call.elf_entry = this.elf_entry;
-		this.elf_end = this.file.byteLength;
+		this.elf_end = this.file.buffer.byteLength;
 
 		// Write segments to memory
 		for (let i = 0; i < ehdr.e_phnum.num(); i ++)
@@ -62,16 +59,18 @@ export default class Process
 
 			const seg_start = phdr.p_offset.num();
 			const seg_end = seg_start + phdr.p_filesz.num();
-			const seg_data = new Uint8Array(this.file.slice(seg_start, seg_end));
+			const seg_data = new Uint8Array(this.file.buffer.slice(seg_start, seg_end));
 
 			// Map memory for ELF file
 			const seg_size = phdr.p_memsz.num();
 			const mem_start = Math.floor(phdr.p_vaddr.num() / (4 * 1024)) * (4 * 1024);
-			const mem_end = Math.ceil((phdr.p_vaddr.num() + seg_size) / (4 * 1024)) * (4 * 1024);
+			const mem_end = Math.ceil((phdr.p_vaddr.num() + seg_size) /
+									  (4 * 1024)) * (4 * 1024);
 			const mem_diff = mem_end - mem_start;
 
-			this.logger.log_to_document("[INFO]: mmap range: " + mem_start.toString(16) + " " +
-						 mem_end.toString(16));
+			this.logger.log_to_document("[INFO]: mmap range: " +
+										mem_start.toString(16) + " " +
+										mem_end.toString(16));
 
 			if (this.system_call.data_end < mem_end)
 			{
@@ -100,20 +99,20 @@ export default class Process
 		stack_pointer -= 8;
 
 		// Program name
-		stack_pointer -= this.filename.length;
+		stack_pointer -= this.file.file_name_command.length;
 		this.unicorn.mem_write(stack_pointer,
-							   new TextEncoder("utf-8").encode(this.filename));
+							   new TextEncoder("utf-8").encode(this.file.file_name_command));
 
 		// Environment string
 		// Empty for now
-	
+		
 		// Argv strings
-		for (var i = 0; i < this.command.length; i ++)
+		for (var i = 0; i < this.image.command.length; i ++)
 		{
 			stack_pointer -= 1; // NULL termination of string
-			stack_pointer -= this.command[i].length;
+			stack_pointer -= this.image.command[i].length;
 			this.unicorn.mem_write(stack_pointer,
-								   new TextEncoder("utf-8").encode(this.command[i]));
+								   new TextEncoder("utf-8").encode(this.image.command[i]));
 			argv_pointers.push(stack_pointer);
 		}
 
@@ -135,13 +134,15 @@ export default class Process
 		{
 			stack_pointer -= 8;
 			this.unicorn.mem_write(stack_pointer,
-								   new Uint8Array(new ElfUInt64(argv_pointers[i]).chunks.buffer));
+								   new Uint8Array(new ElfUInt64(
+									   argv_pointers[i]).chunks.buffer));
 		}
 
 		// Argc (which is 64 bit)
 		stack_pointer -= 8;
 		this.unicorn.mem_write(stack_pointer,
-							   new Uint8Array(new ElfUInt64(argv_pointers.length).chunks.buffer));
+							   new Uint8Array(new ElfUInt64(
+								   argv_pointers.length).chunks.buffer));
 		
 		this.logger.log_memory(this.unicorn, stack_pointer, 20)
 
@@ -188,7 +189,7 @@ export default class Process
 											   this.system_call.continue_arch_prctl_rcx);
 					
 					this.logger.log_to_document("Continuing at" +
-								 this.system_call.continue_arch_prctl_rip.toString(16))
+												this.system_call.continue_arch_prctl_rip.toString(16))
 					this.unicorn.emu_start(this.system_call.continue_arch_prctl_rip,
 										   this.elf_end , 0, 0);
 				}

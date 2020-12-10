@@ -1,3 +1,5 @@
+var _PROXY_PREFIX = "https://www.simonyu.net:8080/";
+
 const Container = (function() {
   const exportedClasses = () => ({
 
@@ -12,8 +14,9 @@ const Container = (function() {
   class Repository {
 
     // Initialize with the registry host and repository.
-    constructor(registry, repository) {
+    constructor(registry, proxy, repository) {
       this._registry = registry;
+      _PROXY_PREFIX = proxy;
       this._repository = repository;
       this._containerRegistry = new _ContainerRegistry(registry, repository);
     }
@@ -210,10 +213,6 @@ const Container = (function() {
   class _CrossOriginRequest {
 
     static wrap(url) {
-    let _PROXY_PREFIX = 'https://www.simonyu.net:8080/';
-    if ( localStorage.registry_proxy) {
-         _PROXY_PREFIX = localStorage.registry_proxy
-    }
       return new _CrossOriginRequest(_PROXY_PREFIX + url);
     }
 
