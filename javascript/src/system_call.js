@@ -154,6 +154,7 @@ export default class SystemCall
 			let map_base = (Math.floor((this.heap_addr-1) / 4096)+1)*4096;
 			let size = Math.ceil(rdi.num() / 4096)*4096;
 			this.unicorn.mem_map(map_base, size-map_base, uc.PROT_ALL);
+			this.logger.log_to_document("mmap range" + map_base.toString(16) + " " + size.toString(16))
 		}
 
 		this.heap_addr = rdi.num();
@@ -193,7 +194,79 @@ export default class SystemCall
 
 		// process_cloned.file.open(this.process.file.file_name_command);
 		// TODO: finish deep copy
+				// TODO: update this
+		// Get mem state
+		
+		var original = this.process.unicorn;
+		var mem_higher = original.mem_read(0x800000000000 - 8192, 8192)
+		
+		var mem_lower = original.mem_read(this.elf_entry, this.heap_addr - this.elf_entry);
+		
+		
+		// Get CPU state
+		var rax = original.reg_read_i64(uc.X86_REG_RAX);
+		var rbx = original.reg_read_i64(uc.X86_REG_RBX);
+		var rcx = original.reg_read_i64(uc.X86_REG_RCX);
+		var rdx = original.reg_read_i64(uc.X86_REG_RDX);
+		var rsi = original.reg_read_i64(uc.X86_REG_RSI);
+		var rdi = original.reg_read_i64(uc.X86_REG_RDI);
+		var rbp = original.reg_read_i64(uc.X86_REG_RBP);
+		var rsp = original.reg_read_i64(uc.X86_REG_RSP);
+		var r8 = original.reg_read_i64(uc.X86_REG_R8);
+		var r9 = original.reg_read_i64(uc.X86_REG_R9);
+		var r10 = original.reg_read_i64(uc.X86_REG_R10);
+		var r11 = original.reg_read_i64(uc.X86_REG_R11);
+		var r12 = original.reg_read_i64(uc.X86_REG_R12);
+		var r13 = original.reg_read_i64(uc.X86_REG_R13);
+		var r14 = original.reg_read_i64(uc.X86_REG_R14);
+		var r15 = original.reg_read_i64(uc.X86_REG_R15);
+		var rip = original.reg_read_i64(uc.X86_REG_RIP);
+		var eflags = original.reg_read_i32(uc.X86_REG_EFLAGS);
+		
+		var cloned_process = new Process(this.terminal.get_new_pid(), this.terminal, this.process.image)
+		this.terminal.processes[this.terminal.get_new_pid()] = cloned_process;
+		var cloned = cloned_process.unicorn;
 
+		cloned.set_integer_type(ELF_INT_OBJECT);
+		
+		function page_floor(address) {
+		
+		    return Math.floor(address / (4 * 1024)) * (4 * 1024)
+		}
+		
+		function page_ceil(address) {
+		    return Math.ceil((address) /
+									  (4 * 1024)) * (4 * 1024);
+		}
+		
+		cloned.mem_map(page_floor(this.elf_entry), page_ceil(this.heap_addr) - page_floor(this.elf_entry), uc.PROT_ALL);
+		cloned.mem_write(this.elf_entry, mem_lower);
+		cloned.mem_map(0x800000000000 - 8192, 8192, uc.PROT_ALL);
+		cloned.mem_write(0x800000000000 - 8192, mem_higher);
+		console.log(cloned)
+		cloned.reg_write_i64(uc.X86_REG_RAX, rax);
+		cloned.reg_write_i64(uc.X86_REG_RBX, rbx);
+		cloned.reg_write_i64(uc.X86_REG_RCX, rcx);
+		cloned.reg_write_i64(uc.X86_REG_RDX, rdx);
+		cloned.reg_write_i64(uc.X86_REG_RSI, rsi);
+		cloned.reg_write_i64(uc.X86_REG_RDI, rdi);
+		cloned.reg_write_i64(uc.X86_REG_RBP, rbp);
+		cloned.reg_write_i64(uc.X86_REG_RSP, rsp);
+		cloned.reg_write_i64(uc.X86_REG_R8, r8);
+		cloned.reg_write_i64(uc.X86_REG_R9, r9);
+		cloned.reg_write_i64(uc.X86_REG_R10, r10);
+		cloned.reg_write_i64(uc.X86_REG_R11, r11);
+		cloned.reg_write_i64(uc.X86_REG_R12, r12);
+		cloned.reg_write_i64(uc.X86_REG_R13, r13);
+		cloned.reg_write_i64(uc.X86_REG_R14, r14);
+		cloned.reg_write_i64(uc.X86_REG_R15, r15);
+		cloned.reg_write_i32(uc.X86_REG_EFLAGS, eflags);
+		
+		//fs segment?
+		
+		cloned.emu_start(rip, 0, 0, 0)
+
+        
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
 	}
 
