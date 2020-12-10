@@ -319,7 +319,7 @@ export default class WebDockerTerminal
 					if (this.trapped == 0)
 					{
 						this.processes[this.trapped_pid].unicorn.emu_start(
-							this.processes[this.trapped_pid].system_call.read_rip, 0, 0);
+							this.processes[this.trapped_pid].system_call.rip, 0, 0);
 						this.prompt();
 					}
 					else
