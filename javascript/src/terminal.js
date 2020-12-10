@@ -115,15 +115,27 @@ export default class WebDockerTerminal
 		{
 			this.writeln("INFO: received command: \"jobs\".");
 			this.prompt();
-		}	
-		else if (buffer_array[0] == "docker")
+		}
+		else if (buffer_array[0] == "debug")
 		{
-			if (!buffer_array[1] || buffer_array[1] != "run")
+			if (buffer_array[1] && buffer_array[1] == "on")
 			{
-				this.writeln("ERROR: invalid docker command.");
-				this.prompt();
+				document.getElementById("container_debug").style.display = "block";
+			}
+			else if (buffer_array[1] && buffer_array[1] == "off")
+			{
+				document.getElementById("container_debug").style.display = "none";
 			}
 			else
+			{
+				this.writeln("ERROR: invalid debug setting.");
+			}
+
+			this.prompt();
+		}
+		else if (buffer_array[0] == "docker")
+		{
+			if (buffer_array[1] && buffer_array[1] == "run")
 			{
 				if (!buffer_array[2] || buffer_array[2] == "")
 				{
@@ -156,6 +168,64 @@ export default class WebDockerTerminal
 							this.prompt();
 						});
 				}
+			}
+			else if (buffer_array[1] == "registry")
+			{
+				if (buffer_array[2] && buffer_array[2] == "url")
+				{
+					if (buffer_array[3] && buffer_array[3] != "")
+					{
+						this.image.registry_url = buffer_array[3];
+					}
+					else
+    				{
+						this.writeln("ERROR: invalid docker registry URL.");
+					}
+				}
+				else if (buffer_array[2] && buffer_array[2] == "proxy")
+				{
+					if (buffer_array[3] && buffer_array[3] != "")
+					{
+						this.image.registry_proxy = buffer_array[3];
+					}
+					else
+    				{
+						this.writeln("ERROR: invalid docker registry proxy.");
+					}
+				}
+				else if (buffer_array[2] && buffer_array[2] == "username")
+				{
+					if (buffer_array[3] && buffer_array[3] != "")
+					{
+						this.image.registry_username = buffer_array[3];
+					}
+					else
+					{
+						this.image.registry_username = "";
+					}
+				}
+				else if (buffer_array[2] && buffer_array[2] == "password")
+				{
+					if (buffer_array[3] && buffer_array[3] != "")
+					{
+						this.image.registry_password = buffer_array[3];
+					}
+					else
+					{
+						this.image.registry_password = "";
+					}
+				}
+				else
+    	        {
+                    this.writeln("ERROR: invalid docker registry command.");
+                }
+
+				this.prompt();
+			}
+			else
+			{
+				this.writeln("ERROR: invalid docker command.");
+				this.prompt();
 			}
 		}
 		else if (buffer_array[0] == "")
