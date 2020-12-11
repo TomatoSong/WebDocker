@@ -294,6 +294,63 @@ export default class WebDockerTerminal
 	
 	time_sharing() 
 	{
+	    for (const [key, value] of Object.entries(this.processes))
+	    {
+	        let process = this.processes[key];
+	        console.log(process)
+	        if(this.processes[key].trapped == 0) {continue;}
+	        
+	    do
+		{
+			try
+			{
+				if (process.system_call.continue_arch_prctl_flag)
+				{
+					process.logger.log_to_document("[INFO]: 2nd half of emulation")
+					process.system_call.continue_arch_prctl_flag = 0;
+					process.logger.log_memory(process.unicorn, process.elf_entry, 10);
+					
+					process.unicorn.emu_start(process.elf_entry, process.elf_entry + 2, 0, 0);
+					
+					process.logger.log_to_document("[INFO]: prctl fixed");
+					process.unicorn.mem_write(process.elf_entry,
+										   process.system_call.continue_arch_prctl_mem);
+					process.unicorn.reg_write_i64(uc.X86_REG_RAX,
+											   process.system_call.continue_arch_prctl_rax);
+					process.unicorn.reg_write_i64(uc.X86_REG_RDX,
+											   process.system_call.continue_arch_prctl_rdx);
+					process.unicorn.reg_write_i64(uc.X86_REG_RCX,
+											   process.system_call.continue_arch_prctl_rcx);
+					
+					process.logger.log_to_document("Continuing at" +
+												process.system_call.continue_arch_prctl_rip.toString(16))
+					process.unicorn.emu_start(process.system_call.continue_arch_prctl_rip,
+										   process.elf_end , 0, 0);
+				}
+				else
+				{
+				    console.log(this.processes[key].last_saved_rip.toString(16))
+					process.unicorn.emu_start(this.processes[key].last_saved_rip, 0, 0 , 1);
+					process.logger.log_register(process.unicorn)
+	                process.last_saved_rip = this.processes[key].unicorn.reg_read_i64(uc.X86_REG_RIP).num();
+				}
+			}
+			catch (error)
+			{   console.log(error)
+			    this.processes[key].trapped = 0;
+			    
+			    console.log(this.processes[key].unicorn.reg_read_i64(uc.X86_REG_RIP).hex())
+			    process.last_saved_rip = this.processes[key].unicorn.reg_read_i64(uc.X86_REG_RIP);
+			    process.unicorn.emu_start(0x40114a,0x401151, 0 , 0);
+			    process.logger.log_register(process.unicorn)
+				process.logger.log_to_document("[ERROR]: emulation failed: " + error + ".")
+				return
+			}
+		}
+		while (process.system_call.continue_arch_prctl_flag && this.processes[key].trapped == -1)
+	        
+	    }
+	    console.log("timetick")
 	    setTimeout(() => {this.time_sharing()}, 0)
 	}
 
@@ -323,8 +380,9 @@ export default class WebDockerTerminal
 
 					if (this.trapped == 0)
 					{
-						this.processes[this.trapped_pid].unicorn.emu_start(
-							this.processes[this.trapped_pid].system_call.rip, 0, 0);
+						this.processes[this.trapped_pid].buffer = this.buffer;
+						this.processes[this.trapped_pid].trapped = -1;
+				        this.reset_buffer();
 						this.prompt();
 					}
 					else

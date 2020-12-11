@@ -7,6 +7,7 @@ export default class Process
     constructor(pid, terminal, image)
 	{
 		this.pid = pid;
+		this.trapped = -1;
 		this.terminal = terminal;
 		this.image = image;
 		this.elf_entry = 0;
@@ -165,50 +166,7 @@ export default class Process
 		// Start emulation
 		this.logger.log_to_document("[INFO]: emulation started at 0x" +
 									this.elf_entry.toString(16) + ".");
-
-		do
-		{
-			try
-			{
-				if (this.system_call.continue_arch_prctl_flag)
-				{
-					this.logger.log_to_document("[INFO]: 2nd half of emulation")
-					this.system_call.continue_arch_prctl_flag = 0;
-					this.logger.log_memory(this.unicorn, this.elf_entry, 10);
-					
-					this.unicorn.emu_start(this.elf_entry, this.elf_entry + 2, 0, 0);
-					
-					this.logger.log_to_document("[INFO]: prctl fixed");
-					this.unicorn.mem_write(this.elf_entry,
-										   this.system_call.continue_arch_prctl_mem);
-					this.unicorn.reg_write_i64(uc.X86_REG_RAX,
-											   this.system_call.continue_arch_prctl_rax);
-					this.unicorn.reg_write_i64(uc.X86_REG_RDX,
-											   this.system_call.continue_arch_prctl_rdx);
-					this.unicorn.reg_write_i64(uc.X86_REG_RCX,
-											   this.system_call.continue_arch_prctl_rcx);
-					
-					this.logger.log_to_document("Continuing at" +
-												this.system_call.continue_arch_prctl_rip.toString(16))
-					this.unicorn.emu_start(this.system_call.continue_arch_prctl_rip,
-										   this.elf_end , 0, 0);
-				}
-				else
-				{
-					this.unicorn.emu_start(this.elf_entry, this.elf_end, 0, 0);
-				}
-			}
-			catch (error)
-			{
-				this.logger.log_to_document("[ERROR]: emulation failed: " + error + ".")
-			}
-		}
-		while (this.system_call.continue_arch_prctl_flag)
-
-		// Finish emulation
-		this.logger.log_to_document("[INFO]: emulation finished.");
-
-		// Log
-		this.logger.log_register(this.unicorn);
+									
+		this.last_saved_rip = this.elf_entry;
 	}
 }

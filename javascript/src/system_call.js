@@ -23,9 +23,6 @@ export default class SystemCall
 
 		this.unicorn.hook_add(uc.HOOK_INSN, this.hook_system_call.bind(this), {}, 1, 0,
 							  uc.X86_INS_SYSCALL);
-		this.unicorn.hook_add(uc.HOOK_MEM_READ_UNMAPPED,
-							  this.hook_unmapped_memory_read.bind(this),
-							  {}, 1, 0, 0);
 
 		this.system_call_dictionary = {
 			0: this.read.bind(this),
