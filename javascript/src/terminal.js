@@ -291,6 +291,11 @@ export default class WebDockerTerminal
 		this.writeln("");
 		this.prompt();	
 	}
+	
+	time_sharing() 
+	{
+	    setTimeout(() => {this.time_sharing()}, 0)
+	}
 
 	start()
 	{
@@ -417,5 +422,6 @@ export default class WebDockerTerminal
 				}
 			}
 		})
+		setTimeout(() => this.time_sharing(), 0)
 	}
 }
