@@ -254,8 +254,6 @@ export default class WebDockerTerminal
 					{
 						return;
 					}
-
-					this.prompt();
 				})
 				.catch((error) => {
 					this.writeln("ERROR: " + command[0] + ": command not found.");
@@ -292,66 +290,63 @@ export default class WebDockerTerminal
 		this.prompt();	
 	}
 	
-	time_sharing() 
+	on_timeout() 
 	{
+	    console.log("timetick for one syscall")
 	    for (const [key, value] of Object.entries(this.processes))
 	    {
 	        let process = this.processes[key];
-	        console.log(process)
+	        // trapped on reading terminal
 	        if(this.processes[key].trapped == 0) {continue;}
 	        
-	    do
-		{
-			try
-			{
-				if (process.system_call.continue_arch_prctl_flag)
-				{
-					process.logger.log_to_document("[INFO]: 2nd half of emulation")
-					process.system_call.continue_arch_prctl_flag = 0;
-					process.logger.log_memory(process.unicorn, process.elf_entry, 10);
-					
-					process.unicorn.emu_start(process.elf_entry, process.elf_entry + 2, 0, 0);
-					
-					process.logger.log_to_document("[INFO]: prctl fixed");
-					process.unicorn.mem_write(process.elf_entry,
-										   process.system_call.continue_arch_prctl_mem);
-					process.unicorn.reg_write_i64(uc.X86_REG_RAX,
-											   process.system_call.continue_arch_prctl_rax);
-					process.unicorn.reg_write_i64(uc.X86_REG_RDX,
-											   process.system_call.continue_arch_prctl_rdx);
-					process.unicorn.reg_write_i64(uc.X86_REG_RCX,
-											   process.system_call.continue_arch_prctl_rcx);
-					
-					process.logger.log_to_document("Continuing at" +
-												process.system_call.continue_arch_prctl_rip.toString(16))
-					process.unicorn.emu_start(process.system_call.continue_arch_prctl_rip,
-										   process.elf_end , 0, 0);
-				}
-				else
-				{
-				    console.log(this.processes[key].last_saved_rip.toString(16))
-					process.unicorn.emu_start(this.processes[key].last_saved_rip, 0, 0 , 1);
+	        // Should schedule for removal from process list
+	        if(this.processes[key].exit_dead == true) {continue;}
+	        
+	        try {
+	                process.unicorn.emu_start(this.processes[key].last_saved_rip, 0, 0, 0);
+					// We kick out the execution after a syscall is successfully handled
 					process.logger.log_register(process.unicorn)
 	                process.last_saved_rip = this.processes[key].unicorn.reg_read_i64(uc.X86_REG_RIP).num();
-				}
-			}
-			catch (error)
-			{   console.log(error)
+	                // Yielding at next syscall
+	                if (process.system_call.continue_arch_prctl_flag) {
+	                    process.logger.log_to_document("[INFO]: 2nd half of emulation")
+					    process.system_call.continue_arch_prctl_flag = 0;
+					    process.logger.log_memory(process.unicorn, process.elf_entry, 10);
+					    
+					    process.unicorn.emu_start(process.elf_entry, process.elf_entry + 2, 0, 0);
+					    
+					    process.logger.log_to_document("[INFO]: prctl fixed");
+					    process.unicorn.mem_write(process.elf_entry,
+										       process.system_call.continue_arch_prctl_mem);
+					    process.unicorn.reg_write_i64(uc.X86_REG_RAX,
+											       process.system_call.continue_arch_prctl_rax);
+					    process.unicorn.reg_write_i64(uc.X86_REG_RDX,
+											       process.system_call.continue_arch_prctl_rdx);
+					    process.unicorn.reg_write_i64(uc.X86_REG_RCX,
+											       process.system_call.continue_arch_prctl_rcx);
+					    
+					    process.logger.log_to_document("Continuing at" +
+												    process.system_call.continue_arch_prctl_rip.toString(16))
+					    process.unicorn.emu_start(process.system_call.continue_arch_prctl_rip,
+										       process.elf_end , 0, 0);
+										       
+					    // Yielding after prctl syscall is correctly handled					   
+					    process.last_saved_rip = this.processes[key].unicorn.reg_read_i64(uc.X86_REG_RIP).num();
+					    
+	                }
+	        } catch (error) {
+	            console.log(error)
 			    this.processes[key].trapped = 0;
-			    
 			    console.log(this.processes[key].unicorn.reg_read_i64(uc.X86_REG_RIP).hex())
 			    process.last_saved_rip = this.processes[key].unicorn.reg_read_i64(uc.X86_REG_RIP);
-			    process.unicorn.emu_start(0x40114a,0x401151, 0 , 0);
 			    process.logger.log_register(process.unicorn)
-				process.logger.log_to_document("[ERROR]: emulation failed: " + error + ".")
+				process.logger.log_to_document("[ERROR]: Timesharine emulation failed: " + error + ".")
 				return
-			}
-		}
-		while (process.system_call.continue_arch_prctl_flag && this.processes[key].trapped == -1)
+	        }
+
 	        
 	    }
-	    console.log("timetick")
-	    setTimeout(() => {this.time_sharing()}, 0)
+	    setTimeout(() => {this.on_timeout()}, 0)
 	}
 
 	start()
@@ -480,6 +475,6 @@ export default class WebDockerTerminal
 				}
 			}
 		})
-		setTimeout(() => this.time_sharing(), 0)
+		setTimeout(() => this.on_timeout(), 0)
 	}
 }

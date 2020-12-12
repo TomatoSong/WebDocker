@@ -12,6 +12,7 @@ export default class Process
 		this.image = image;
 		this.elf_entry = 0;
 		this.elf_end = 0;
+		this.exit_dead = false;
 
 		this.unicorn = new uc.Unicorn(uc.ARCH_X86, uc.MODE_64);
 		this.file = new File(this.image);

@@ -20,6 +20,7 @@ export default class SystemCall
 		this.continue_arch_prctl_rdx = 0;
 		this.continue_arch_prctl_mem = 0;
 		this.rip = 0;
+		this.syscall_kickout_flag = false;
 
 		this.unicorn.hook_add(uc.HOOK_INSN, this.hook_system_call.bind(this), {}, 1, 0,
 							  uc.X86_INS_SYSCALL);
@@ -108,6 +109,7 @@ export default class SystemCall
 
 		this.terminal.write(string_array[string_array.length - 1]);
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, rdx.num());
+		this.syscall_kickout_flag = true;
 	}
 
 	stat()
@@ -156,11 +158,13 @@ export default class SystemCall
 
 		this.heap_addr = rdi.num();
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, this.heap_addr);
+		this.syscall_kickout_flag = true;
 	}
 
 	rt_sigaction()
 	{
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
+		this.syscall_kickout_flag = true;
 	}
 
 	ioctl()
@@ -170,11 +174,13 @@ export default class SystemCall
 	getpid()
 	{
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, this.process.pid);
+		this.syscall_kickout_flag = true;
 	}
 
 	getuid()
 	{
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
+		this.syscall_kickout_flag = true;
 	}
 
 	getppid()
@@ -324,17 +330,20 @@ export default class SystemCall
 		const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
 
 		this.unicorn.emu_stop();
+		this.process.exit_dead = true;
 
 		if (rdi.num() != 0)
 		{
 			this.terminal.writeln("WARN: program exit with code " + rdi.num() + ".");
 		}
+		this.terminal.prompt()
 	}
 
 	wait4()
 	{
 		// TODO: handle this
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
+		this.syscall_kickout_flag = true;
 	}
 
 	
@@ -343,6 +352,7 @@ export default class SystemCall
 		const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
 
 		this.unicorn.mem_write(rdi, new TextEncoder("utf-8").encode("Linux")); 
+		this.syscall_kickout_flag = true;
 	}
 
 	getcwd()
@@ -351,6 +361,7 @@ export default class SystemCall
 		const rsi = this.unicorn.reg_read_i64(uc.X86_REG_RSI);
 
 		this.unicorn.mem_write(rdi, new TextEncoder("utf-8").encode("/\0"));
+		this.syscall_kickout_flag = true;
 	}
 
 	arch_prctl()
@@ -379,7 +390,7 @@ export default class SystemCall
 			this.continue_arch_prctl_rdx = 0;
 			this.continue_arch_prctl_mem = 0;
 			this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
-
+            this.syscall_kickout_flag = true;
 			return;
 		}
 
@@ -403,10 +414,12 @@ export default class SystemCall
 	gettid()
 	{
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
+		this.syscall_kickout_flag = true;
 	}
 
 	set_tid_address()
 	{
+	    this.syscall_kickout_flag = true;
 	}
 
 	exit_group()
@@ -428,11 +441,11 @@ export default class SystemCall
         }
 
 		this.system_call_dictionary[rax.num()]();
-	}
-	
-	hook_unmapped_memory_read()
-	{
-		this.logger.log_to_document("[ERROR]: unmapped memory read.");
-		this.logger.log_register(this.unicorn);
+		
+		if (this.syscall_kickout_flag == true) {
+		    this.syscall_kickout_flag = false;
+		    this.unicorn.emu_stop();
+		    
+		}
 	}
 }
