@@ -19,7 +19,8 @@ export default class SystemCall
 		this.continue_arch_prctl_rcx = 0;
 		this.continue_arch_prctl_rdx = 0;
 		this.continue_arch_prctl_mem = 0;
-		this.rip = 0;
+		this.saved_arch_prctl_fs = 0;
+		this.continue_read_rip = 0;
 		this.syscall_kickout_flag = false;
 
 		this.unicorn.hook_add(uc.HOOK_INSN, this.hook_system_call.bind(this), {}, 1, 0,
@@ -59,9 +60,10 @@ export default class SystemCall
 			return;
 		}
 
-		if (this.terminal.trapped == 0)
+		if (this.continue_read_rip == rip.num())
 		{
-			let buffer = this.terminal.buffer;
+			let buffer = this.process.buffer;
+			this.process.buffer = "";
 
 			if (rdx.num() - 1 < buffer.length)
 			{
@@ -75,14 +77,16 @@ export default class SystemCall
 
 			this.unicorn.mem_write(rsi, new TextEncoder("utf-8").encode(buffer));
 			this.unicorn.reg_write_i64(uc.X86_REG_RAX, buffer.length);
-			this.terminal.trapped = -1;
+			this.terminal.trapped = false;
 			this.terminal.trapped_pid = -1;
+			this.continue_read_rip = 0
 		}
 		else
 		{
-			this.terminal.trapped = 0;
+		    this.process.trapped = true;
+			this.terminal.trapped = true;
 			this.terminal.trapped_pid = this.process.pid;
-			this.rip = rip;
+			this.continue_read_rip = rip;
 			this.unicorn.emu_stop();
 		}
 	}
@@ -164,7 +168,7 @@ export default class SystemCall
 	rt_sigaction()
 	{
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
-		this.syscall_kickout_flag = true;
+		//this.syscall_kickout_flag = true;
 	}
 
 	ioctl()
@@ -203,7 +207,7 @@ export default class SystemCall
 		var original = this.process.unicorn;
 		var mem_higher = original.mem_read(0x800000000000 - 8192, 8192)
 		
-		var mem_lower = original.mem_read(this.elf_entry, this.heap_addr - this.elf_entry);
+		var mem_lower = original.mem_read(0x401000, this.heap_addr - 0x401000);
 		
 		
 		// Get CPU state
@@ -226,8 +230,9 @@ export default class SystemCall
 		var rip = original.reg_read_i64(uc.X86_REG_RIP);
 		var eflags = original.reg_read_i32(uc.X86_REG_EFLAGS);
 		
-		var cloned_process = new Process(this.terminal.get_new_pid(), this.terminal, this.process.image)
-		this.terminal.processes[this.terminal.get_new_pid()] = cloned_process;
+		var new_pid = this.terminal.get_new_pid();
+		var cloned_process = new Process(new_pid, this.terminal, this.process.image)
+		this.terminal.processes[new_pid] = cloned_process;
 		var cloned = cloned_process.unicorn;
 
 		cloned.set_integer_type(ELF_INT_OBJECT);
@@ -242,12 +247,19 @@ export default class SystemCall
 									  (4 * 1024)) * (4 * 1024);
 		}
 		
-		cloned.mem_map(page_floor(this.elf_entry), page_ceil(this.heap_addr) - page_floor(this.elf_entry), uc.PROT_ALL);
-		cloned.mem_write(this.elf_entry, mem_lower);
+		cloned.mem_map(page_floor(0x401000), page_ceil(this.heap_addr) - page_floor(0x401000), uc.PROT_ALL);
+		cloned.mem_write(0x401000, mem_lower);
 		cloned.mem_map(0x800000000000 - 8192, 8192, uc.PROT_ALL);
 		cloned.mem_write(0x800000000000 - 8192, mem_higher);
+		// fix fs
+		cloned.reg_write_i64(uc.X86_REG_RAX, this.saved_arch_prctl_fs);
+		cloned.reg_write_i64(uc.X86_REG_RDX, 0);
+		cloned.reg_write_i64(uc.X86_REG_RCX, 0xC0000100);
+		cloned.mem_write(this.elf_entry, [0x0f, 0x30, 0x90, 0x90, 0x90]);
+		cloned.emu_start(this.elf_entry, this.elf_entry + 2, 0, 0);
+		
 		console.log(cloned)
-		cloned.reg_write_i64(uc.X86_REG_RAX, rax);
+		cloned.reg_write_i64(uc.X86_REG_RAX, 0);
 		cloned.reg_write_i64(uc.X86_REG_RBX, rbx);
 		cloned.reg_write_i64(uc.X86_REG_RCX, rcx);
 		cloned.reg_write_i64(uc.X86_REG_RDX, rdx);
@@ -265,12 +277,22 @@ export default class SystemCall
 		cloned.reg_write_i64(uc.X86_REG_R15, r15);
 		cloned.reg_write_i32(uc.X86_REG_EFLAGS, eflags);
 		
-		//fs segment?
-		
-		cloned.emu_start(rip, 0, 0, 0)
-
+		console.log(rip.hex())
+		try{
+		// TODO
+		// No, don't do this, put it properly to the process queue
+		cloned.emu_start(rip+2, 0, 0, 0)
+		this.process.logger.log_register(cloned)
+		this.process.logger.log_to_document("[ERROR]: cloned_process finished: ")
+        }
+        catch (error)
+        {
+           console.log(error);
+		   this.process.logger.log_register(cloned)
+		   this.process.logger.log_to_document("[ERROR]: cloned_process failed: " + error + ".")
+        }
         
-		this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
+		this.unicorn.reg_write_i64(uc.X86_REG_RAX, new_pid);
 	}
 
 	execve()
@@ -400,6 +422,7 @@ export default class SystemCall
 		this.continue_arch_prctl_rcx = rcx;
 		this.continue_arch_prctl_rdx = rdx;
 		this.continue_arch_prctl_mem = this.unicorn.mem_read(this.elf_entry, 5);
+		this.saved_arch_prctl_fs = rsi;
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, rsi);
 		this.unicorn.reg_write_i64(uc.X86_REG_RDX, 0);
 		this.unicorn.reg_write_i64(uc.X86_REG_RCX, 0xC0000100);
@@ -439,6 +462,8 @@ export default class SystemCall
 
             return;
         }
+        
+        this.logger.log_to_document(system_call_table[rax.num()] + " + " + rax.num());
 
 		this.system_call_dictionary[rax.num()]();
 		

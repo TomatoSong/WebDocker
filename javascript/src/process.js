@@ -7,7 +7,7 @@ export default class Process
     constructor(pid, terminal, image)
 	{
 		this.pid = pid;
-		this.trapped = -1;
+		this.trapped = false;
 		this.terminal = terminal;
 		this.image = image;
 		this.elf_entry = 0;

@@ -7,6 +7,7 @@ export default class Logger
 
 	log_to_document(string)
 	{
+	    this.document_log = document.getElementById("logger").innerHTML;
 		this.document_log += string;
 		this.document_log += "<br>";
 

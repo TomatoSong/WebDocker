@@ -21,7 +21,7 @@ export default class WebDockerTerminal
 
 		this.processes = {};
 
-		this.trapped = -1;
+		this.trapped = false;
 		this.trapped_pid = -1;
 		this.buffer = "";
 		this.cursor = 0;
@@ -156,7 +156,7 @@ export default class WebDockerTerminal
 							process.file.open(process.image.command[0]);
 							process.execute();
 
-							if (this.trapped == 0)
+							if (this.trapped == true)
 							{
 								return;
 							}
@@ -250,7 +250,7 @@ export default class WebDockerTerminal
 					process.file.buffer = file;
 					process.execute();
 
-					if (this.trapped == 0)
+					if (this.trapped == true)
 					{
 						return;
 					}
@@ -297,25 +297,25 @@ export default class WebDockerTerminal
 	    {
 	        let process = this.processes[key];
 	        // trapped on reading terminal
-	        if(this.processes[key].trapped == 0) {continue;}
+	        if(this.processes[key].trapped == true) { continue;}
 	        
 	        // Should schedule for removal from process list
 	        if(this.processes[key].exit_dead == true) {continue;}
 	        
 	        try {
+	                // We just hit enter and process is no longer trapped, set up read syscall
+	                if (process.system_call.continue_read_rip != 0) {
+	                    this.processes[key].last_saved_rip = process.system_call.continue_read_rip;
+	                }
 	                process.unicorn.emu_start(this.processes[key].last_saved_rip, 0, 0, 0);
 					// We kick out the execution after a syscall is successfully handled
 					process.logger.log_register(process.unicorn)
 	                process.last_saved_rip = this.processes[key].unicorn.reg_read_i64(uc.X86_REG_RIP).num();
 	                // Yielding at next syscall
 	                if (process.system_call.continue_arch_prctl_flag) {
-	                    process.logger.log_to_document("[INFO]: 2nd half of emulation")
 					    process.system_call.continue_arch_prctl_flag = 0;
-					    process.logger.log_memory(process.unicorn, process.elf_entry, 10);
 					    
 					    process.unicorn.emu_start(process.elf_entry, process.elf_entry + 2, 0, 0);
-					    
-					    process.logger.log_to_document("[INFO]: prctl fixed");
 					    process.unicorn.mem_write(process.elf_entry,
 										       process.system_call.continue_arch_prctl_mem);
 					    process.unicorn.reg_write_i64(uc.X86_REG_RAX,
@@ -324,9 +324,6 @@ export default class WebDockerTerminal
 											       process.system_call.continue_arch_prctl_rdx);
 					    process.unicorn.reg_write_i64(uc.X86_REG_RCX,
 											       process.system_call.continue_arch_prctl_rcx);
-					    
-					    process.logger.log_to_document("Continuing at" +
-												    process.system_call.continue_arch_prctl_rip.toString(16))
 					    process.unicorn.emu_start(process.system_call.continue_arch_prctl_rip,
 										       process.elf_end , 0, 0);
 										       
@@ -336,7 +333,7 @@ export default class WebDockerTerminal
 	                }
 	        } catch (error) {
 	            console.log(error)
-			    this.processes[key].trapped = 0;
+			    this.processes[key].trapped = true;
 			    console.log(this.processes[key].unicorn.reg_read_i64(uc.X86_REG_RIP).hex())
 			    process.last_saved_rip = this.processes[key].unicorn.reg_read_i64(uc.X86_REG_RIP);
 			    process.logger.log_register(process.unicorn)
@@ -373,12 +370,12 @@ export default class WebDockerTerminal
 				{
 					this.writeln("");
 
-					if (this.trapped == 0)
+					if (this.trapped == true)
 					{
+					    this.trapped = false;
 						this.processes[this.trapped_pid].buffer = this.buffer;
-						this.processes[this.trapped_pid].trapped = -1;
+						this.processes[this.trapped_pid].trapped = false;
 				        this.reset_buffer();
-						this.prompt();
 					}
 					else
 					{
