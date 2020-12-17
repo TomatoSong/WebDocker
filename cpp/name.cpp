@@ -1,10 +1,15 @@
 #include <unistd.h>
 
+#define SIZE 1024
+
 int
 main(int argc, char *argv[])
 {
 	const char* space = " ";
 	const char* new_line = "\n";
+
+	char name[SIZE];
+	int count_total = 0;
 
 	for (int i = 0; i < argc; i ++)
 	{
@@ -12,18 +17,22 @@ main(int argc, char *argv[])
 
 		while (argv[i][count] != '\0')
 		{
+			name[count_total] = argv[i][count];
+			count_total ++;
 			count ++;
 		}
-		
-		write(1, argv[i], count);
 
 		if (i < argc - 1)
 		{
-			write(1, space, 1);
+			name[count_total] = ' ';
+			count_total ++;
 		}
 	}
 
-	write(1, new_line, 1);
+	name[count_total] = '\n';
+	count_total ++;
+
+	write(1, name, count_total);
 
 	return 0;
 }

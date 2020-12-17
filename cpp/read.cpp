@@ -1,12 +1,14 @@
 #include <unistd.h>
 
+#define SIZE 1024
+
 int
 main()
 {
-    char string[1024];
+    char string[SIZE];
 	int count = 0;
 
-	read(0, string, 1024);
+	read(0, string, SIZE);
 	
 	while (string[count] != '\0')
 	{

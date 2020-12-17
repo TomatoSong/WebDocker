@@ -160,8 +160,6 @@ export default class WebDockerTerminal
 							{
 								return;
 							}
-
-							this.prompt();
 						})
 						.catch(error => {
 							this.writeln("ERROR: " + error._errorMessage + ".");
