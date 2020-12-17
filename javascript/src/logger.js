@@ -3,11 +3,20 @@ export default class Logger
  	constructor()
 	{
 		this.document_log = "";
+		this.initialized = false;
 	}
 
 	log_to_document(string)
 	{
-	    this.document_log = document.getElementById("logger").innerHTML;
+		if (!this.initialized)
+		{
+			this.initialized = true;
+		}
+		else
+		{
+			this.document_log = document.getElementById("logger").innerHTML;
+		}
+
 		this.document_log += string;
 		this.document_log += "<br>";
 
