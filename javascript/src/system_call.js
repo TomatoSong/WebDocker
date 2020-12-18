@@ -22,6 +22,8 @@ export default class SystemCall
 		this.saved_arch_prctl_fs = 0;
 		this.continue_read_rip = 0;
 		this.syscall_kickout_flag = false;
+		this.execve_flag = false;
+		this.child_pid = 0;
 
 		this.unicorn.hook_add(uc.HOOK_INSN, this.hook_system_call.bind(this), {}, 1, 0,
 							  uc.X86_INS_SYSCALL);
@@ -232,7 +234,7 @@ export default class SystemCall
 		
 		var new_pid = this.terminal.get_new_pid();
 		var cloned_process = new Process(new_pid, this.terminal, this.process.image)
-		this.terminal.processes[new_pid] = cloned_process;
+		
 		var cloned = cloned_process.unicorn;
 
 		cloned.set_integer_type(ELF_INT_OBJECT);
@@ -258,7 +260,6 @@ export default class SystemCall
 		cloned.mem_write(this.elf_entry, [0x0f, 0x30, 0x90, 0x90, 0x90]);
 		cloned.emu_start(this.elf_entry, this.elf_entry + 2, 0, 0);
 		
-		console.log(cloned)
 		cloned.reg_write_i64(uc.X86_REG_RAX, 0);
 		cloned.reg_write_i64(uc.X86_REG_RBX, rbx);
 		cloned.reg_write_i64(uc.X86_REG_RCX, rcx);
@@ -276,23 +277,13 @@ export default class SystemCall
 		cloned.reg_write_i64(uc.X86_REG_R14, r14);
 		cloned.reg_write_i64(uc.X86_REG_R15, r15);
 		cloned.reg_write_i32(uc.X86_REG_EFLAGS, eflags);
+		this.child_pid = new_pid;
 		
-		console.log(rip.hex())
-		try{
-		// TODO
-		// No, don't do this, put it properly to the process queue
-		cloned.emu_start(rip+2, 0, 0, 0)
-		this.process.logger.log_register(cloned)
-		this.process.logger.log_to_document("[ERROR]: cloned_process finished: ")
-        }
-        catch (error)
-        {
-           console.log(error);
-		   this.process.logger.log_register(cloned)
-		   this.process.logger.log_to_document("[ERROR]: cloned_process failed: " + error + ".")
-        }
-        
+		
+		this.terminal.processes[new_pid] = cloned_process;
+		this.terminal.processes[new_pid].last_saved_rip = rip.num() + 2;
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, new_pid);
+		
 	}
 
 	execve()
@@ -335,16 +326,13 @@ export default class SystemCall
 		console.log(argv);
 		argv.unshift(filename);
 		console.log(argv);
-
-		let pid = this.terminal.get_new_pid();
-		let p = new Process(pid, this.terminal, this.terminal.image);
-		p.image.command = argv;
-		p.file.open(filename);
-		p.pid = pid;
-		this.terminal.processes[pid] = p;
-		this.unicorn.emu_stop();
-		p.execute();
-		console.log(this.terminal.processes);
+		
+		
+		
+        this.execve_flag = true
+        this.execve_command = argv;
+		this.process.unicorn.emu_stop();
+		return
 	}
 
 	exit()
@@ -364,8 +352,10 @@ export default class SystemCall
 	wait4()
 	{
 		// TODO: handle this
-		this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
+		const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
+		this.unicorn.reg_write_i64(uc.X86_REG_RAX, this.child_pid);
 		this.syscall_kickout_flag = true;
+		
 	}
 
 	
@@ -373,7 +363,11 @@ export default class SystemCall
 	{
 		const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
 
-		this.unicorn.mem_write(rdi, new TextEncoder("utf-8").encode("Linux")); 
+		this.unicorn.mem_write(rdi, new TextEncoder("utf-8").encode("Linux"));
+		this.unicorn.mem_write(rdi.num() + 6, new TextEncoder("utf-8").encode("Linux")); 
+		this.unicorn.mem_write(rdi.num() + 12, new TextEncoder("utf-8").encode("Linux")); 
+		this.unicorn.mem_write(rdi.num() + 18, new TextEncoder("utf-8").encode("Linux")); 
+		this.unicorn.mem_write(rdi.num() + 24, new TextEncoder("utf-8").encode("Linux")); 
 		this.syscall_kickout_flag = true;
 	}
 
@@ -452,7 +446,9 @@ export default class SystemCall
 
 	hook_system_call()
     {
-		const rax = this.unicorn.reg_read_i64(uc.X86_REG_RAX);
+        let rip = this.unicorn.reg_read_i64(uc.X86_REG_RIP);
+        console.log(rip.hex());
+		let rax = this.unicorn.reg_read_i64(uc.X86_REG_RAX);
 
         if (!this.system_call_dictionary[rax.num()])
         {

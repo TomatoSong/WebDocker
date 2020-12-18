@@ -13,6 +13,8 @@ export default class Process
 		this.elf_entry = 0;
 		this.elf_end = 0;
 		this.exit_dead = false;
+		this.last_saved_rip = 0;
+		this.command = ""
 
 		this.unicorn = new uc.Unicorn(uc.ARCH_X86, uc.MODE_64);
 		this.file = new File(this.image);
@@ -104,10 +106,13 @@ export default class Process
 		stack_pointer -= this.file.file_name_command.length;
 		this.unicorn.mem_write(stack_pointer,
 							   new TextEncoder("utf-8").encode(this.file.file_name_command));
+        console.log(this.file.file_name_command)
 
 		// Environment string
 		// Empty for now
 		
+		if (this.command == "")
+		{
 		// Argv strings
 		for (var i = 0; i < this.image.command.length; i ++)
 		{
@@ -115,6 +120,16 @@ export default class Process
 			stack_pointer -= this.image.command[i].length;
 			this.unicorn.mem_write(stack_pointer,
 								   new TextEncoder("utf-8").encode(this.image.command[i]));
+			argv_pointers.push(stack_pointer);
+		}
+		console.log(this.image.command)
+		}
+		else
+		{
+		    stack_pointer -= 1; // NULL termination of string
+			stack_pointer -= this.command.length;
+			this.unicorn.mem_write(stack_pointer,
+								   new TextEncoder("utf-8").encode(this.command));
 			argv_pointers.push(stack_pointer);
 		}
 
@@ -146,7 +161,7 @@ export default class Process
 							   new Uint8Array(new ElfUInt64(
 								   argv_pointers.length).chunks.buffer));
 		
-		this.logger.log_memory(this.unicorn, stack_pointer, 20)
+		this.logger.log_memory(this.unicorn, stack_pointer, 52)
 
 		// Set stack pointer
 		this.unicorn.reg_write_i64(uc.X86_REG_RSP, stack_pointer);
@@ -167,7 +182,9 @@ export default class Process
 		// Start emulation
 		this.logger.log_to_document("[INFO]: emulation started at 0x" +
 									this.elf_entry.toString(16) + ".");
-									
+								 
+	    console.log(this.elf_entry);
+	    this.unicorn.reg_write_i64(uc.X86_REG_RIP, this.elf_entry)
 		this.last_saved_rip = this.elf_entry;
 	}
 }

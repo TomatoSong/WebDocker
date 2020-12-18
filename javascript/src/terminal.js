@@ -291,6 +291,7 @@ export default class WebDockerTerminal
 	on_timeout() 
 	{
 	    console.log("timetick for one syscall")
+	    console.log(this.processes)
 	    for (const [key, value] of Object.entries(this.processes))
 	    {
 	        let process = this.processes[key];
@@ -305,9 +306,11 @@ export default class WebDockerTerminal
 	                if (process.system_call.continue_read_rip != 0) {
 	                    this.processes[key].last_saved_rip = process.system_call.continue_read_rip;
 	                }
-	                process.unicorn.emu_start(this.processes[key].last_saved_rip, 0, 0, 0);
+	                process.logger.log_to_document(this.processes[key].last_saved_rip.toString(16))
+	                process.unicorn.emu_start(this.processes[key].last_saved_rip, 0xffffffff, 0, 0);
 					// We kick out the execution after a syscall is successfully handled
-					process.logger.log_register(process.unicorn)
+					process.logger.log_register(process.unicorn);
+					console.log(this.processes[key].unicorn.reg_read_i64(uc.X86_REG_RIP).num());
 	                process.last_saved_rip = this.processes[key].unicorn.reg_read_i64(uc.X86_REG_RIP).num();
 	                // Yielding at next syscall
 	                if (process.system_call.continue_arch_prctl_flag) {
@@ -329,8 +332,19 @@ export default class WebDockerTerminal
 					    process.last_saved_rip = this.processes[key].unicorn.reg_read_i64(uc.X86_REG_RIP).num();
 					    
 	                }
+	                if (process.system_call.execve_flag) {
+	                    process.system_call.execve_flag = false;
+	                    let command = process.system_call.execve_command[0];
+	                    
+	                    let newprocess = new Process(parseInt(key), this, this.image);
+	                    newprocess.command = command;
+						this.processes[key] = newprocess;
+						newprocess.file.open(command);
+						newprocess.execute();
+	                }
 	        } catch (error) {
 	            console.log(error)
+	            console.log(key)
 			    this.processes[key].trapped = true;
 			    console.log(this.processes[key].unicorn.reg_read_i64(uc.X86_REG_RIP).hex())
 			    process.last_saved_rip = this.processes[key].unicorn.reg_read_i64(uc.X86_REG_RIP);
