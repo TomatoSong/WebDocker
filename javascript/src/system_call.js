@@ -364,10 +364,11 @@ export default class SystemCall
 		const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
 
 		this.unicorn.mem_write(rdi, new TextEncoder("utf-8").encode("Linux"));
-		this.unicorn.mem_write(rdi.num() + 6, new TextEncoder("utf-8").encode("Linux")); 
-		this.unicorn.mem_write(rdi.num() + 12, new TextEncoder("utf-8").encode("Linux")); 
-		this.unicorn.mem_write(rdi.num() + 18, new TextEncoder("utf-8").encode("Linux")); 
-		this.unicorn.mem_write(rdi.num() + 24, new TextEncoder("utf-8").encode("Linux")); 
+		this.unicorn.mem_write(rdi.num() + 65, new TextEncoder("utf-8").encode("WebDocker"));
+		this.unicorn.mem_write(rdi.num() + 65*2, new TextEncoder("utf-8").encode("0.1"));
+		this.unicorn.mem_write(rdi.num() + 65*3, new TextEncoder("utf-8").encode("2020"));
+		this.unicorn.mem_write(rdi.num() + 65*4, new TextEncoder("utf-8").encode("x86_64"));
+
 		this.syscall_kickout_flag = true;
 	}
 
