@@ -54,7 +54,8 @@ export default class SystemCall
 			201: this.time.bind(this),
 			218: this.set_tid_address.bind(this),
 			228: this.clock_gettime.bind(this),
-			231: this.exit_group.bind(this)
+			231: this.exit_group.bind(this),
+			235: this.utimes.bind(this)
 		};
 	}
 
@@ -165,7 +166,6 @@ export default class SystemCall
 
 	brk()
 	{
-		this.logger.log_to_document("BRK");
 		const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
 
 		if (this.heap_addr == 0)
@@ -185,7 +185,6 @@ export default class SystemCall
 			let map_base = (Math.floor((this.heap_addr-1) / 4096)+1)*4096;
 			let size = Math.ceil(rdi.num() / 4096)*4096;
 			this.unicorn.mem_map(map_base, size-map_base, uc.PROT_ALL);
-			this.logger.log_to_document("mmap range" + map_base.toString(16) + " " + size.toString(16))
 		}
 
 		this.heap_addr = rdi.num();
@@ -517,6 +516,26 @@ export default class SystemCall
 	{
 		this.exit();
 	}
+	
+	utimes(filename, times)
+	{
+	    let pointer = filename;
+		let character = '';
+		let path_name = "";
+
+		while (character.toString() != '\0')
+		{
+			character = this.unicorn.mem_read(pointer, 1);
+			character = new TextDecoder("utf-8").decode(character);
+			path_name += character;
+			pointer += 1;
+		}
+		
+		this.unicorn.reg_write_i64(uc.X86_REG_RAX, -2);
+		console.log(this.process.image)
+		return;
+		alert(path_name);
+	}
 
 	hook_system_call()
     {
@@ -536,6 +555,10 @@ export default class SystemCall
 
             return;
         }
+        
+        this.logger.log_to_document("ERROR: systemcall handled: " 
+								  + system_call_table[rax.num()] +
+								  " (" + rax.num() + ")" + ".");
 
 		this.system_call_dictionary[rax.num()](rdi, rsi, rdx, r10, r8, r9);
 		
