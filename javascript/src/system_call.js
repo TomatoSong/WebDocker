@@ -21,7 +21,7 @@ export default class SystemCall
 		this.continue_arch_prctl_mem = 0;
 		this.saved_arch_prctl_fs = 0;
 		this.continue_read_rip = 0;
-		this.syscall_kickout_flag = false;
+		this.syscall_yield_flag = false;
 		this.execve_flag = false;
 		this.child_pid = 0;
 
@@ -93,18 +93,14 @@ export default class SystemCall
 		}
 	}
 
-	write()
+	write(fd, buf, count)
 	{
-		const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
-		const rsi = this.unicorn.reg_read_i64(uc.X86_REG_RSI);
-		const rdx = this.unicorn.reg_read_i64(uc.X86_REG_RDX);
-		
-		if (rdi.num() != 1 && rdi.num() != 2)
+		if (fd.num() != 1 && fd.num() != 2)
 		{
 			return;
 		}
 
-		const buffer = this.unicorn.mem_read(rsi, rdx.num());
+		const buffer = this.unicorn.mem_read(buf, count.num());
 		const string = new TextDecoder("utf-8").decode(buffer);
 		const string_array = string.split("\n");
 
@@ -114,8 +110,9 @@ export default class SystemCall
 		}
 
 		this.terminal.write(string_array[string_array.length - 1]);
-		this.unicorn.reg_write_i64(uc.X86_REG_RAX, rdx.num());
-		this.syscall_kickout_flag = true;
+		this.syscall_yield_flag = true;
+		
+		this.unicorn.reg_write_i64(uc.X86_REG_RAX, count.num());
 	}
 
 	stat()
@@ -164,13 +161,12 @@ export default class SystemCall
 
 		this.heap_addr = rdi.num();
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, this.heap_addr);
-		this.syscall_kickout_flag = true;
+		this.syscall_yield_flag = true;
 	}
 
 	rt_sigaction()
 	{
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
-		//this.syscall_kickout_flag = true;
 	}
 
 	ioctl()
@@ -179,14 +175,17 @@ export default class SystemCall
 
 	getpid()
 	{
+	    this.syscall_yield_flag = true;
+	    
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, this.process.pid);
-		this.syscall_kickout_flag = true;
 	}
 
 	getuid()
 	{
+	    this.syscall_yield_flag = true;
+	    
+	    // For now we assume running as root user
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
-		this.syscall_kickout_flag = true;
 	}
 
 	getppid()
@@ -354,22 +353,21 @@ export default class SystemCall
 		// TODO: handle this
 		const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, this.child_pid);
-		this.syscall_kickout_flag = true;
+		this.syscall_yield_flag = true;
 		
 	}
 
 	
-	uname()
+	uname(buf)
 	{
-		const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
+		const FIELD_LENGTH = (1 << 6) + 1;
+		const fields = ["Linux", "WebDocker", "r0.1", "v12/18/2020", "x86_64"];
+		
+		fields.forEach((field, index) => this.unicorn.mem_write(buf.num() + index*FIELD_LENGTH, new TextEncoder("utf-8").encode(field)));
 
-		this.unicorn.mem_write(rdi, new TextEncoder("utf-8").encode("Linux"));
-		this.unicorn.mem_write(rdi.num() + 65, new TextEncoder("utf-8").encode("WebDocker"));
-		this.unicorn.mem_write(rdi.num() + 65*2, new TextEncoder("utf-8").encode("0.1"));
-		this.unicorn.mem_write(rdi.num() + 65*3, new TextEncoder("utf-8").encode("2020"));
-		this.unicorn.mem_write(rdi.num() + 65*4, new TextEncoder("utf-8").encode("x86_64"));
-
-		this.syscall_kickout_flag = true;
+		this.syscall_yield_flag = true;
+		
+		this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
 	}
 
 	getcwd()
@@ -378,7 +376,7 @@ export default class SystemCall
 		const rsi = this.unicorn.reg_read_i64(uc.X86_REG_RSI);
 
 		this.unicorn.mem_write(rdi, new TextEncoder("utf-8").encode("/\0"));
-		this.syscall_kickout_flag = true;
+		this.syscall_yield_flag = true;
 	}
 
 	arch_prctl()
@@ -407,7 +405,7 @@ export default class SystemCall
 			this.continue_arch_prctl_rdx = 0;
 			this.continue_arch_prctl_mem = 0;
 			this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
-            this.syscall_kickout_flag = true;
+            this.syscall_yield_flag = true;
 			return;
 		}
 
@@ -432,12 +430,12 @@ export default class SystemCall
 	gettid()
 	{
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
-		this.syscall_kickout_flag = true;
+		this.syscall_yield_flag = true;
 	}
 
 	set_tid_address()
 	{
-	    this.syscall_kickout_flag = true;
+	    this.syscall_yield_flag = true;
 	}
 
 	exit_group()
@@ -447,9 +445,13 @@ export default class SystemCall
 
 	hook_system_call()
     {
-        let rip = this.unicorn.reg_read_i64(uc.X86_REG_RIP);
-        console.log(rip.hex());
-		let rax = this.unicorn.reg_read_i64(uc.X86_REG_RAX);
+		const rax = this.unicorn.reg_read_i64(uc.X86_REG_RAX);
+		const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
+		const rsi = this.unicorn.reg_read_i64(uc.X86_REG_RSI);
+		const rdx = this.unicorn.reg_read_i64(uc.X86_REG_RDX);
+		const r10 = this.unicorn.reg_read_i64(uc.X86_REG_R10);
+		const r8 = this.unicorn.reg_read_i64(uc.X86_REG_R8);
+		const r9 = this.unicorn.reg_read_i64(uc.X86_REG_R9);
 
         if (!this.system_call_dictionary[rax.num()])
         {
@@ -462,10 +464,10 @@ export default class SystemCall
         
         this.logger.log_to_document(system_call_table[rax.num()] + " + " + rax.num());
 
-		this.system_call_dictionary[rax.num()]();
+		this.system_call_dictionary[rax.num()](rdi, rsi, rdx, r10, r8, r9);
 		
-		if (this.syscall_kickout_flag == true) {
-		    this.syscall_kickout_flag = false;
+		if (this.syscall_yield_flag == true) {
+		    this.syscall_yield_flag = false;
 		    this.unicorn.emu_stop();
 		    
 		}
