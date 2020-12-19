@@ -37,14 +37,17 @@ export default class SystemCall
 			12: this.brk.bind(this),
 			13: this.rt_sigaction.bind(this),
 			16: this.ioctl.bind(this),
+			33: this.dup2.bind(this),
 			39: this.getpid.bind(this),
 			56: this.clone.bind(this),
+			58: this.vfork.bind(this),
 			59: this.execve.bind(this),
 			60: this.exit.bind(this),
 			61: this.wait4.bind(this),
 			63: this.uname.bind(this),
 			79: this.getcwd.bind(this),
 			102: this.getuid.bind(this),
+			103: this.syslog.bind(this),
 			110: this.getppid.bind(this),
 			158: this.arch_prctl.bind(this),
 			186: this.gettid.bind(this),
@@ -198,6 +201,11 @@ export default class SystemCall
 	ioctl()
 	{
 	}
+	
+	dup2(oldfd, newfd)
+	{
+	    this.unicorn.reg_write_i64(uc.X86_REG_RAX, newfd.num());
+	}
 
 	getpid()
 	{
@@ -213,9 +221,22 @@ export default class SystemCall
 	    // For now we assume running as root user
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
 	}
+	
+	syslog(type, bufp, len)
+	{
+	    if (bufp.num() != 0)
+	    {
+	    this.unicorn.mem_write(bufp, new TextEncoder("utf-8").encode("Future WebDocker log goes here"));
+        }
+        this.unicorn.reg_write_i64(uc.X86_REG_RAX, "Future WebDocker log goes here".length);
+	}
 
 	getppid()
 	{
+	}
+	vfork()
+	{
+	    this.clone()
 	}
 
 	clone()
