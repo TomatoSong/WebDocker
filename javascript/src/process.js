@@ -15,6 +15,8 @@ export default class Process
 		this.exit_dead = false;
 		this.last_saved_rip = 0;
 		this.command = ""
+		this.stack_size = 8192;
+		this.stack_addr = 0x800000000000 - this.stack_size;
 
 		this.unicorn = new uc.Unicorn(uc.ARCH_X86, uc.MODE_64);
 		this.file = new File(this.image);

@@ -11,6 +11,7 @@ export default class SystemCall
 		this.logger = logger;
 
 		this.heap_addr = 0;
+		this.mmap_addr = 0;
 		this.data_end = 0;
 		this.elf_entry = 0;
 		this.continue_arch_prctl_flag = 0;
@@ -31,6 +32,8 @@ export default class SystemCall
 		this.system_call_dictionary = {
 			0: this.read.bind(this),
 			1: this.write.bind(this),
+			9: this.mmap.bind(this),
+			11: this.munmap.bind(this),
 			12: this.brk.bind(this),
 			13: this.rt_sigaction.bind(this),
 			16: this.ioctl.bind(this),
@@ -45,7 +48,9 @@ export default class SystemCall
 			110: this.getppid.bind(this),
 			158: this.arch_prctl.bind(this),
 			186: this.gettid.bind(this),
+			201: this.time.bind(this),
 			218: this.set_tid_address.bind(this),
+			228: this.clock_gettime.bind(this),
 			231: this.exit_group.bind(this)
 		};
 	}
@@ -132,6 +137,27 @@ export default class SystemCall
 		}
 
 		// TODO handle this
+	}
+	
+	mmap(addr, length, prot, flags, fd, offset)
+	{
+	    if (this.mmap_addr == 0)
+	    {
+	        this.mmap_addr = this.process.stack_addr
+	    }
+	    
+	    // Assmue length is page aligned
+	    this.mmap_addr -= length.num();
+	    this.unicorn.mem_map(this.mmap_addr, length.num(), uc.PROT_ALL);
+	    
+	    this.unicorn.reg_write_i64(uc.X86_REG_RAX, this.mmap_addr);
+		this.syscall_yield_flag = true;
+	}
+	
+	munmap(addr, length)
+	{
+	    this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
+		this.syscall_yield_flag = true;
 	}
 
 	brk()
@@ -432,10 +458,38 @@ export default class SystemCall
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
 		this.syscall_yield_flag = true;
 	}
+	
+	time(tloc)
+	{
+	    const now = new Date();
+	    const utcMilllisecondsSinceEpoch = now.getTime() + (now.getTimezoneOffset() * 60 * 1000)  
+	    const utcSecondsSinceEpoch = Math.round(utcMilllisecondsSinceEpoch / 1000)
+	    if (tloc.num() != 0)
+	    {
+	        this.unicorn.mem_write(tloc, new Uint8Array(new ElfUInt64(utcSecondsSinceEpoch).chunks.buffer))
+	    }							   
+		this.unicorn.reg_write_i64(uc.X86_REG_RAX, utcSecondsSinceEpoch);
+		this.syscall_yield_flag = true;
+	}
 
 	set_tid_address()
 	{
 	    this.syscall_yield_flag = true;
+	}
+	
+	clock_gettime(clockid, tp)
+	{
+	    const now = new Date()  
+        const utcMilllisecondsSinceEpoch = now.getTime() + (now.getTimezoneOffset() * 60 * 1000)  
+        const utcSecondsSinceEpoch = Math.floor(utcMilllisecondsSinceEpoch / 1000)
+        const residueMilliseconds = utcMilllisecondsSinceEpoch - utcSecondsSinceEpoch * 1000;
+	    this.unicorn.mem_write(tp, new Uint8Array(new ElfUInt64(
+									   utcSecondsSinceEpoch).chunks.buffer))
+		this.unicorn.mem_write(tp.num()+8, new Uint8Array(new ElfUInt64(
+									   residueMilliseconds).chunks.buffer))
+	    
+	    this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
+		this.syscall_yield_flag = true;
 	}
 
 	exit_group()
@@ -461,8 +515,6 @@ export default class SystemCall
 
             return;
         }
-        
-        this.logger.log_to_document(system_call_table[rax.num()] + " + " + rax.num());
 
 		this.system_call_dictionary[rax.num()](rdi, rsi, rdx, r10, r8, r9);
 		
