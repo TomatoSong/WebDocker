@@ -26,6 +26,7 @@ hexedit
 hostid
 hostname
 hush
+head
 hwclock
 i2cdetect
 i2cdump

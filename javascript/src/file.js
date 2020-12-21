@@ -6,6 +6,8 @@ export default class File
 		this.file_name_command = "";
 		this.file_name = "";
 		this.buffer = [];
+		this.seek = 0;
+		this.file_found = true;
 	}
 
 	open(file_name)
@@ -39,13 +41,24 @@ export default class File
 		{
 			throw "[ERROR]: invalid file name.";
 		}
-
+		
+		if(this.image.files[this.file_name_command] == undefined)
+		{
+		    this.file_found = false;
+		    return
+		}
+		
+ 
 		link_name = this.image.files[this.file_name_command].linkname;
 
 		if (link_name != "")
 		{
 			while (link_name != "")
 			{
+			    if(link_name[0] == "/")
+			    {
+			        link_name = link_name.substr(1);
+			    }
 				this.file_name = this.image.files[link_name].name;
 				link_name = this.image.files[link_name].linkname;
 			}

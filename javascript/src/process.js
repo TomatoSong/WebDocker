@@ -17,7 +17,7 @@ export default class Process
 		this.command = ""
 		this.stack_size = 8192;
 		this.stack_addr = 0x800000000000 - this.stack_size;
-		this.dyld_addr = this.stack_addr;
+		this.dyld_addr = 0x7f0000000000;
 
 		this.unicorn = new uc.Unicorn(uc.ARCH_X86, uc.MODE_64);
 		this.file = new File(this.image);
@@ -57,6 +57,8 @@ export default class Process
 
 		this.elf_entry = ehdr.e_entry.num();
 		this.phoff = ehdr.e_phoff.num();
+		this.phentsize = ehdr.e_phentsize.num();
+		this.phnum = ehdr.e_phnum.num();
 		this.system_call.elf_entry = this.elf_entry;
 		this.elf_end = this.file.buffer.byteLength;
 
@@ -131,6 +133,11 @@ export default class Process
 
 		// Environment string
 		// Empty for now
+		// PATH
+		stack_pointer -= (this.image.path.length + 1);
+		this.unicorn.mem_write(stack_pointer,
+								   new TextEncoder("utf-8").encode(this.image.path));
+		const path_ptr = stack_pointer
 		
 		if (this.command == "")
 		{
@@ -159,26 +166,52 @@ export default class Process
 		// AT_NULL
 		stack_pointer -= 16;
 		
+		stack_pointer -= 192;
+		
 		// AT_ENTRY
 		stack_pointer -=16;
 		this.unicorn.mem_write(stack_pointer,new Uint8Array(new ElfUInt64(0x09).chunks.buffer));
 		this.unicorn.mem_write(stack_pointer + 8,new Uint8Array(new ElfUInt64(this.elf_entry).chunks.buffer));
 		
-		// AT_PHDR
-		stack_pointer -= 16;
-				this.unicorn.mem_write(stack_pointer,new Uint8Array(new ElfUInt64(0x03).chunks.buffer));
-		this.unicorn.mem_write(stack_pointer + 8,new Uint8Array(new ElfUInt64(this.phoff).chunks.buffer));
+		// AT_FlaGS
+		stack_pointer -=16;
+		this.unicorn.mem_write(stack_pointer,new Uint8Array(new ElfUInt64(0x08).chunks.buffer));
+		this.unicorn.mem_write(stack_pointer + 8,new Uint8Array(new ElfUInt64(0).chunks.buffer));
 		
 		// AT_BASE
 		stack_pointer -= 16;
 				this.unicorn.mem_write(stack_pointer,new Uint8Array(new ElfUInt64(0x07).chunks.buffer));
 		this.unicorn.mem_write(stack_pointer + 8,new Uint8Array(new ElfUInt64(0).chunks.buffer));
+		
+		// AT_PAGESZ
+		stack_pointer -= 16;
+				this.unicorn.mem_write(stack_pointer,new Uint8Array(new ElfUInt64(0x06).chunks.buffer));
+		this.unicorn.mem_write(stack_pointer + 8,new Uint8Array(new ElfUInt64(0x1000).chunks.buffer));
+		
+		// AT_Phnum
+		stack_pointer -= 16;
+				this.unicorn.mem_write(stack_pointer,new Uint8Array(new ElfUInt64(0x05).chunks.buffer));
+		this.unicorn.mem_write(stack_pointer + 8,new Uint8Array(new ElfUInt64(this.punum).chunks.buffer));
+		
+		// AT_PHENT
+		stack_pointer -= 16;
+				this.unicorn.mem_write(stack_pointer,new Uint8Array(new ElfUInt64(0x04).chunks.buffer));
+		this.unicorn.mem_write(stack_pointer + 8,new Uint8Array(new ElfUInt64(this.phentsize).chunks.buffer));
+		
+		
+		// AT_PHDR
+		stack_pointer -= 16;
+				this.unicorn.mem_write(stack_pointer,new Uint8Array(new ElfUInt64(0x03).chunks.buffer));
+		this.unicorn.mem_write(stack_pointer + 8,new Uint8Array(new ElfUInt64(this.phoff).chunks.buffer));
 
 		// NULL that ends envp[]
 		stack_pointer -= 8;
-
-		// Environment pointers
-		// Empty for now
+		
+		// PATH
+		stack_pointer -= 8;
+		this.unicorn.mem_write(stack_pointer,
+								   new Uint8Array(new ElfUInt64(
+									   path_ptr).chunks.buffer));
 
 		// NULL that ends argv[]
 		stack_pointer -= 8;

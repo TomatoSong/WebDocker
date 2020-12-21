@@ -1,5 +1,6 @@
 import { system_call_table } from './system_call_table.js';
 import Process from './process.js';
+import File from './file.js';
 
 export default class SystemCall
 {
@@ -25,6 +26,7 @@ export default class SystemCall
 		this.syscall_yield_flag = false;
 		this.execve_flag = false;
 		this.child_pid = 0;
+		this.opened_files = {0:null, 1:null, 2:null};
 
 		this.unicorn.hook_add(uc.HOOK_INSN, this.hook_system_call.bind(this), {}, 1, 0,
 							  uc.X86_INS_SYSCALL);
@@ -32,7 +34,10 @@ export default class SystemCall
 		this.system_call_dictionary = {
 			0: this.read.bind(this),
 			1: this.write.bind(this),
+			2: this.open.bind(this),
+			3: this.close.bind(this),
 			9: this.mmap.bind(this),
+			10: this.mprotect.bind(this),
 			11: this.munmap.bind(this),
 			12: this.brk.bind(this),
 			13: this.rt_sigaction.bind(this),
@@ -60,7 +65,7 @@ export default class SystemCall
 		};
 	}
 
-	read()
+	read(fd, buf, count)
 	{
 		const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
 		const rsi = this.unicorn.reg_read_i64(uc.X86_REG_RSI);
@@ -69,6 +74,16 @@ export default class SystemCall
 
 		if (rdi.num() != 0)
 		{
+		    if (this.opened_files[fd.num()]) {
+		        let seek = this.opened_files[fd.num()].seek;
+		        if (seek + count.num() > this.opened_files[fd.num()].buffer.length)
+		        {
+		            count = new ElfUint64(this.opened_files[fd.num()].buffer.length - seek)
+		        }
+		        this.unicorn.mem_write(buf, new Uint8Array(this.opened_files[fd.num()].buffer.slice(seek, seek + count.num())))
+		        this.opened_files[fd.num()].seek = seek + count.num()
+		        this.unicorn.reg_write_i64(uc.X86_REG_RAX, count.num());
+		    }
 			return;
 		}
 
@@ -124,6 +139,44 @@ export default class SystemCall
 		
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, count.num());
 	}
+	
+	open(path, flags)
+	{
+	    let pointer = path.num();
+		let character = '';
+		character = this.unicorn.mem_read(pointer, 1);
+	    character = new TextDecoder("utf-8").decode(character);
+		let path_name = "";
+
+		while (character.toString() != '\0')
+		{
+			path_name += character;
+			pointer += 1;
+			character = this.unicorn.mem_read(pointer, 1);
+			character = new TextDecoder("utf-8").decode(character);
+		}
+		
+		//get new fd
+		const fd = Object.keys(this.opened_files).length;
+		
+		this.opened_files[fd] = new File(this.process.image)
+		this.opened_files[fd].open(path_name)
+		alert(path_name)
+		console.log(this.opened_files[fd].buffer)
+		if(this.opened_files[fd].file_found == false)
+		{
+		this.unicorn.reg_write_i64(uc.X86_REG_RAX, -2);
+		}
+		else
+		{
+		this.unicorn.reg_write_i64(uc.X86_REG_RAX, fd);
+	    }
+	}
+	
+	close()
+	{
+	    this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
+	}
 
 	stat()
 	{
@@ -152,11 +205,24 @@ export default class SystemCall
 	    }
 	    
 	    // Assmue length is page aligned
-	    this.mmap_addr -= length.num();
+	    
 	    this.unicorn.mem_map(this.mmap_addr, length.num(), uc.PROT_ALL);
 	    
+	    if(this.opened_files[fd.num()])
+	    {
+	        const file_mapped = new Uint8Array(this.opened_files[fd.num()].buffer.slice(offset.num(), offset.num()+length.num()))
+	        this.unicorn.mem_write(this.mmap_addr, file_mapped);
+	    }
+	    
 	    this.unicorn.reg_write_i64(uc.X86_REG_RAX, this.mmap_addr);
+	    this.mmap_addr += length.num();
 		this.syscall_yield_flag = true;
+	}
+	
+	mprotect()
+	{
+	    this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
+	    this.syscall_yield_flag = true;
 	}
 	
 	munmap(addr, length)
@@ -208,22 +274,21 @@ export default class SystemCall
 	    for (var i = 0; i < iovcnt.num(); i ++)
 	    {
 	        let iovec = this.unicorn.mem_read(iov.num()+i*16, 16);
-	        //alert(iovec)
-	        console.log(iovec);
+
 	        //Very disappointed at js buffer conversion
 	        let iov_base = iovec[5]*1099511627776 + iovec[4]*4294967296 + iovec[3]*16777216 + iovec[2]*65536 + iovec[1]*256 + iovec[0];
-	        console.log(iov_base)
 	        let iov_len = iovec[13]*1099511627776 + iovec[12]*4294967296 + iovec[11]*16777216 + iovec[10]*65536 + iovec[9]*256 + iovec[8];
 	        
 	        const buffer = this.unicorn.mem_read(iov_base, iov_len);
 		    const string = new TextDecoder("utf-8").decode(buffer);
 		    const string_array = string.split("\n");
-		    console.log(string_array)
 
-		    for (var j = 0; j < string_array.length - 1; j ++)
+
+		    for (var j = 0; j < string_array.length -1; j ++)
 		    {
 			    this.terminal.writeln(string_array[j]);
 		    }
+		    this.terminal.write(string_array[string_array.length - 1]);
 		    
 	        bytes_written += iov_len
 	    }
@@ -565,7 +630,6 @@ export default class SystemCall
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, -2);
 		console.log(this.process.image)
 		return;
-		alert(path_name);
 	}
 
 	hook_system_call()
