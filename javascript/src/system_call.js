@@ -37,6 +37,7 @@ export default class SystemCall
 			12: this.brk.bind(this),
 			13: this.rt_sigaction.bind(this),
 			16: this.ioctl.bind(this),
+			20: this.writev.bind(this),
 			33: this.dup2.bind(this),
 			39: this.getpid.bind(this),
 			56: this.clone.bind(this),
@@ -147,7 +148,7 @@ export default class SystemCall
 	{
 	    if (this.mmap_addr == 0)
 	    {
-	        this.mmap_addr = this.process.stack_addr
+	        this.mmap_addr = this.process.dyld_addr
 	    }
 	    
 	    // Assmue length is page aligned
@@ -199,6 +200,35 @@ export default class SystemCall
 
 	ioctl()
 	{
+	}
+	
+	writev(fd, iov, iovcnt)
+	{
+	    let bytes_written = 0;
+	    for (var i = 0; i < iovcnt.num(); i ++)
+	    {
+	        let iovec = this.unicorn.mem_read(iov.num()+i*16, 16);
+	        //alert(iovec)
+	        console.log(iovec);
+	        //Very disappointed at js buffer conversion
+	        let iov_base = iovec[5]*1099511627776 + iovec[4]*4294967296 + iovec[3]*16777216 + iovec[2]*65536 + iovec[1]*256 + iovec[0];
+	        console.log(iov_base)
+	        let iov_len = iovec[13]*1099511627776 + iovec[12]*4294967296 + iovec[11]*16777216 + iovec[10]*65536 + iovec[9]*256 + iovec[8];
+	        
+	        const buffer = this.unicorn.mem_read(iov_base, iov_len);
+		    const string = new TextDecoder("utf-8").decode(buffer);
+		    const string_array = string.split("\n");
+		    console.log(string_array)
+
+		    for (var j = 0; j < string_array.length - 1; j ++)
+		    {
+			    this.terminal.writeln(string_array[j]);
+		    }
+		    
+	        bytes_written += iov_len
+	    }
+	    
+	    this.unicorn.reg_write_i64(uc.X86_REG_RAX, bytes_written);
 	}
 	
 	dup2(oldfd, newfd)
@@ -494,6 +524,7 @@ export default class SystemCall
 
 	set_tid_address()
 	{
+	    this.unicorn.reg_write_i64(uc.X86_REG_RAX, 5000);
 	    this.syscall_yield_flag = true;
 	}
 	
@@ -546,19 +577,21 @@ export default class SystemCall
 		const r10 = this.unicorn.reg_read_i64(uc.X86_REG_R10);
 		const r8 = this.unicorn.reg_read_i64(uc.X86_REG_R8);
 		const r9 = this.unicorn.reg_read_i64(uc.X86_REG_R9);
+		
+		const rip = this.unicorn.reg_read_i64(uc.X86_REG_RIP);
 
         if (!this.system_call_dictionary[rax.num()])
         {
 			this.terminal.writeln("ERROR: missing system call: " 
 								  + system_call_table[rax.num()] +
-								  " (" + rax.num() + ")" + ".");
+								  " (" + rax.num() + ")" + "." + rip.hex());
 
             return;
         }
         
         this.logger.log_to_document("ERROR: systemcall handled: " 
 								  + system_call_table[rax.num()] +
-								  " (" + rax.num() + ")" + ".");
+								  " (" + rax.num() + ")" + "." + rip.hex());
 
 		this.system_call_dictionary[rax.num()](rdi, rsi, rdx, r10, r8, r9);
 		

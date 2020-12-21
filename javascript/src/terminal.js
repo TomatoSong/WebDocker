@@ -304,9 +304,11 @@ export default class WebDockerTerminal
 	                if (process.system_call.continue_read_rip != 0) {
 	                    this.processes[key].last_saved_rip = process.system_call.continue_read_rip;
 	                }
-	                process.unicorn.emu_start(this.processes[key].last_saved_rip, 0xffffffff, 0, 0);
+	                process.unicorn.emu_start(this.processes[key].last_saved_rip, 0, 0, 0);
 					// We kick out the execution after a syscall is successfully handled
 	                process.last_saved_rip = this.processes[key].unicorn.reg_read_i64(uc.X86_REG_RIP).num();
+	                //process.logger.log_to_document(process.last_saved_rip.toString(16))
+	                //process.logger.log_register(process.unicorn)
 	                // Yielding at next syscall
 	                if (process.system_call.continue_arch_prctl_flag) {
 					    process.system_call.continue_arch_prctl_flag = 0;

@@ -17,6 +17,7 @@ export default class Process
 		this.command = ""
 		this.stack_size = 8192;
 		this.stack_addr = 0x800000000000 - this.stack_size;
+		this.dyld_addr = this.stack_addr;
 
 		this.unicorn = new uc.Unicorn(uc.ARCH_X86, uc.MODE_64);
 		this.file = new File(this.image);
@@ -25,6 +26,11 @@ export default class Process
 										  this.terminal, this.logger);
 
         this.unicorn.set_integer_type(ELF_INT_OBJECT);
+	}
+	
+	load_interpreter(ld_so_buffer)
+	{
+	    
 	}
 	
 	load_elf()
@@ -50,6 +56,7 @@ export default class Process
 		}
 
 		this.elf_entry = ehdr.e_entry.num();
+		this.phoff = ehdr.e_phoff.num();
 		this.system_call.elf_entry = this.elf_entry;
 		this.elf_end = this.file.buffer.byteLength;
 
@@ -60,6 +67,18 @@ export default class Process
 
 			if (phdr.p_type.num() !== PT_LOAD || phdr.p_filesz.num() === 0)
 			{
+			    if (phdr.p_type.num() == PT_INTERP)
+			    {
+			        
+			        const seg_start = phdr.p_offset.num();
+			        const seg_end = seg_start + phdr.p_filesz.num();
+			        const interpreter = new Uint8Array(this.file.buffer.slice(seg_start, seg_end));
+			        const character = new TextDecoder("utf-8").decode(interpreter).slice(1, -1);
+			        console.log(this.image.files[character].buffer)
+			        ld_so_filebuffer = this.image.files[character].buffer
+
+                    this.load_interpreter(ld_so_filebuffer);
+			    }
 				continue;
 			}
 
@@ -137,7 +156,23 @@ export default class Process
 
 		// ELF Auxiliary Table
 		// Empty for now, put NULL
-		stack_pointer -= 8;
+		// AT_NULL
+		stack_pointer -= 16;
+		
+		// AT_ENTRY
+		stack_pointer -=16;
+		this.unicorn.mem_write(stack_pointer,new Uint8Array(new ElfUInt64(0x09).chunks.buffer));
+		this.unicorn.mem_write(stack_pointer + 8,new Uint8Array(new ElfUInt64(this.elf_entry).chunks.buffer));
+		
+		// AT_PHDR
+		stack_pointer -= 16;
+				this.unicorn.mem_write(stack_pointer,new Uint8Array(new ElfUInt64(0x03).chunks.buffer));
+		this.unicorn.mem_write(stack_pointer + 8,new Uint8Array(new ElfUInt64(this.phoff).chunks.buffer));
+		
+		// AT_BASE
+		stack_pointer -= 16;
+				this.unicorn.mem_write(stack_pointer,new Uint8Array(new ElfUInt64(0x07).chunks.buffer));
+		this.unicorn.mem_write(stack_pointer + 8,new Uint8Array(new ElfUInt64(0).chunks.buffer));
 
 		// NULL that ends envp[]
 		stack_pointer -= 8;
