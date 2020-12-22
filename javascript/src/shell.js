@@ -33,6 +33,7 @@ export default class WebDockerTerminal
 		this.init();
 		this.reset_buffer();
 		this.term.onKey((e) => this.onKey(e))
+		this.start();
 	}
 
 	prompt()
