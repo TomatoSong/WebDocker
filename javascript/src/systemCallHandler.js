@@ -1,4 +1,4 @@
-import { system_call_table } from './system_call_table.js';
+import { system_call_table } from './systemCallTable.js';
 import Process from './process.js';
 import File from './file.js';
 
@@ -15,7 +15,7 @@ export default class SystemCall
 		this.mmap_addr = 0;
 		this.data_end = 0;
 		this.elf_entry = 0;
-		this.continue_arch_prctl_flag = 0;
+		this.continue_arch_prctl_flag = false;
 		this.continue_arch_prctl_rip = 0;
 		this.continue_arch_prctl_rax = 0;
 		this.continue_arch_prctl_rcx = 0;
@@ -539,7 +539,7 @@ export default class SystemCall
 		if (this.continue_arch_prctl_rip == rip.num()) 
 		{
 			this.logger.log_to_document(["Returning", rdi.hex(), rsi.hex(), rip.hex()])
-			this.continue_arch_prctl_flag = 0;
+			this.continue_arch_prctl_flag = false;
 			this.continue_arch_prctl_rip = 0;
 			this.continue_arch_prctl_rax = 0;
 			this.continue_arch_prctl_rcx = 0;
@@ -550,7 +550,7 @@ export default class SystemCall
 			return;
 		}
 
-		this.continue_arch_prctl_flag = 1;
+		this.continue_arch_prctl_flag = true;
 		this.continue_arch_prctl_rip = rip.num();
 		this.continue_arch_prctl_rax = rax;
 		this.continue_arch_prctl_rcx = rcx;

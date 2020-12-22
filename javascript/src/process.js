@@ -1,6 +1,6 @@
 import File from "./file.js";
 import Logger from "./logger.js";
-import SystemCall from "./system_call.js";
+import SystemCall from "./systemCallHandler.js";
 
 export default class Process
 {

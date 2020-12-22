@@ -13,12 +13,14 @@ String.prototype.remove = function(idx)
 
 export default class WebDockerTerminal
 {
-	constructor()
+	constructor(headless)
 	{
+	    // headless mode
 		this.term = new Terminal();
 		this.fit_addon = new FitAddon.FitAddon();
 		this.image = new Image();
-
+		
+		this.imageManager = new Image();
 		this.processes = {};
 
 		this.trapped = false;
@@ -30,6 +32,7 @@ export default class WebDockerTerminal
 
 		this.init();
 		this.reset_buffer();
+		this.term.onKey((e) => this.onKey(e))
 	}
 
 	prompt()
@@ -103,7 +106,7 @@ export default class WebDockerTerminal
 		return command;
 	}
 
-	on_cmd(buffer)
+	onCmd(buffer)
 	{
 		let buffer_array = buffer.split(" ");
 
@@ -263,12 +266,15 @@ export default class WebDockerTerminal
 
 	get_new_pid()
 	{
-		if (Object.keys(this.processes).length == 0)
+		const max_pid = Math.max(...Object.keys(this.processes));
+		if (max_pid === -Infinity) 
 		{
-			return 1;
+		    return 1;
 		}
-
-		return Object.keys(this.processes).length + 1;
+		else
+		{
+		    return max_pid + 1;
+		}
 	}
 
 	init()
@@ -278,18 +284,14 @@ export default class WebDockerTerminal
 		this.term.focus()
 		this.fit_addon.fit();
 
-		if (this.term._initialized)
-		{
-			return;
-		}
-
 		this.writeln("Welcome to WebDocker!");
-		this.writeln("Use docker run <img> <cmd> to run a docker image.");
+		this.writeln("Usage:  docker run IMAGE [COMMAND] [ARG...]");
+		this.writeln("Run a command in a new container");
 		this.writeln("");
 		this.prompt();	
 	}
 	
-	on_timeout() 
+	onTimeout() 
 	{
 	    for (const [key, value] of Object.entries(this.processes))
 	    {
@@ -310,7 +312,10 @@ export default class WebDockerTerminal
 	                process.last_saved_rip = this.processes[key].unicorn.reg_read_i64(uc.X86_REG_RIP).num();
 	                process.logger.log_to_document(process.last_saved_rip.toString(16))
 	                //process.logger.log_register(process.unicorn)
-	                // Yielding at next syscall
+	                
+	                // Yielded for other processes' system call, or
+	                // Special handling of system calls that require emulator to stop before modifying states
+	                
 	                if (process.system_call.continue_arch_prctl_flag) {
 					    process.system_call.continue_arch_prctl_flag = 0;
 					    
@@ -330,6 +335,7 @@ export default class WebDockerTerminal
 					    process.last_saved_rip = this.processes[key].unicorn.reg_read_i64(uc.X86_REG_RIP).num();
 					    
 	                }
+	                
 	                if (process.system_call.execve_flag) {
 	                    process.system_call.execve_flag = false;
 	                    let command = process.system_call.execve_command[0];
@@ -353,13 +359,12 @@ export default class WebDockerTerminal
 
 	        
 	    }
-	    setTimeout(() => {this.on_timeout()}, 0)
+	    setTimeout(() => {this.onTimeout()}, 0)
 	}
-
-	start()
+	
+	onKey(e)
 	{
-		this.term.onKey((e) => {
-			const ev = e.domEvent;
+	    const ev = e.domEvent;
 			const printable = !ev.altKey && !ev.ctrlKey && !ev.metaKey;
 
 			if (ev.ctrlKey) 
@@ -389,7 +394,7 @@ export default class WebDockerTerminal
 					}
 					else
 					{
-						this.on_cmd(this.buffer);
+						this.onCmd(this.buffer);
 					}
 
 					this.reset_buffer();
@@ -481,7 +486,10 @@ export default class WebDockerTerminal
 					break;
 				}
 			}
-		})
-		setTimeout(() => this.on_timeout(), 0)
+	}
+
+	start()
+	{
+		setTimeout(() => this.onTimeout(), 0)
 	}
 }

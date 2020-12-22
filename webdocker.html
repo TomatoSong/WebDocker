@@ -12,7 +12,16 @@
 	<script src="javascript/lib/pako.min.js"></script>
 	<script src="javascript/lib/xterm.js"></script>
 	<script src="javascript/lib/xterm-addon-fit.js"></script>
-	<script type="module" src="javascript/src/webdocker.js"></script>
+	<script type="module" src="javascript/src/index.js"></script>
+	<script type="module">
+	import WebDockerTerminal from "./javascript/src/index.js"
+	window.onload = function()
+{    
+	let terminal = new WebDockerTerminal();
+	
+	terminal.start();
+}
+	</script>
   </head>
 
   <body class="webdocker">
