@@ -2,9 +2,6 @@ import Image from "./image.js";
 
 export default class ImageManager {
   constructor() {
-    this.path = "";
-    this.command = "";
-    this.files = {};
     this.images = {};
 
     this.registry_url = "www.simonyu.net:5000";
@@ -12,8 +9,17 @@ export default class ImageManager {
     this.registry_username = "webdocker";
     this.registry_password = "@Webdocker";
   }
+  
+  async openFile(file_name) {
+    const response = await fetch("bin/" + file_name);
+    const file = await response.arrayBuffer();
+    
+    let return_image = new Image();
+    return_image.files[file_name] = {linkname: "", buffer: file}
+    return return_image
+  }
 
-  async open(image_name, command) {
+  async openImage(image_name, command="") {
     // Parse image name for image tag
     let return_image = new Image();
 
@@ -62,7 +68,7 @@ export default class ImageManager {
       return_image.files = files.reduce((files, file) => {
         files[file.name] = file;
         return files;
-      }, this.files);
+      }, return_image.files);
     }
 
     return return_image;

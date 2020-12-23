@@ -20,6 +20,7 @@ export default class SystemCall {
     this.continue_arch_prctl_rdx = 0;
     this.continue_arch_prctl_mem = 0;
     this.saved_arch_prctl_fs = 0;
+    
     this.continue_read_rip = 0;
     this.syscall_yield_flag = false;
     this.execve_flag = false;
@@ -293,7 +294,7 @@ export default class SystemCall {
   }
 
   dup2(oldfd, newfd) {
-    this.unicorn.reg_write_i64(uc.X86_REG_RAX, newfd.num());
+    return newfd.num();
   }
 
   getpid() {
@@ -328,17 +329,6 @@ export default class SystemCall {
   }
 
   clone() {
-    // let pid_new = this.terminal.get_new_pid();
-    // let process_cloned = new Process(pid_new, this.terminal, this.terminal.image);
-
-    // process_cloned.elf_entry = this.process.elf_entry;
-    // process_cloned.elf_end = this.process.elf_end;
-
-    // process_cloned.file.open(this.process.file.file_name_command);
-    // TODO: finish deep copy
-    // TODO: update this
-    // Get mem state
-
     var original = this.process.unicorn;
     var mem_higher = original.mem_read(0x800000000000 - 8192, 8192);
 
@@ -395,7 +385,7 @@ export default class SystemCall {
     cloned.reg_write_i64(uc.X86_REG_RAX, this.saved_arch_prctl_fs);
     cloned.reg_write_i64(uc.X86_REG_RDX, 0);
     cloned.reg_write_i64(uc.X86_REG_RCX, 0xc0000100);
-    cloned.mem_write(this.elf_entry, [0x0f, 0x30, 0x90, 0x90, 0x90]);
+    cloned.mem_write(this.elf_entry, [0x0f, 0x30]);
     cloned.emu_start(this.elf_entry, this.elf_entry + 2, 0, 0);
 
     cloned.reg_write_i64(uc.X86_REG_RAX, 0);
@@ -549,7 +539,7 @@ export default class SystemCall {
     this.continue_arch_prctl_rax = rax;
     this.continue_arch_prctl_rcx = rcx;
     this.continue_arch_prctl_rdx = rdx;
-    this.continue_arch_prctl_mem = this.unicorn.mem_read(this.elf_entry, 5);
+    this.continue_arch_prctl_mem = this.unicorn.mem_read(this.elf_entry, 2);
     this.saved_arch_prctl_fs = rsi;
     this.unicorn.reg_write_i64(uc.X86_REG_RAX, rsi);
     this.unicorn.reg_write_i64(uc.X86_REG_RDX, 0);

@@ -33,9 +33,9 @@ export default class Process {
 
   load_interpreter(ld_so_buffer) {}
 
-  load_elf() {
+  load_elf(buffer) {
     // Create ELF file object
-    let elf = new Elf(this.file.buffer);
+    let elf = new Elf(buffer);
 
     // Check if file is ELF
     if (elf.kind() !== "elf") {
@@ -57,7 +57,7 @@ export default class Process {
     this.phentsize = ehdr.e_phentsize.num();
     this.phnum = ehdr.e_phnum.num();
     this.system_call.elf_entry = this.elf_entry;
-    this.elf_end = this.file.buffer.byteLength;
+    this.elf_end = buffer.byteLength;
 
     // Write segments to memory
     for (let i = 0; i < ehdr.e_phnum.num(); i++) {
@@ -68,7 +68,7 @@ export default class Process {
           const seg_start = phdr.p_offset.num();
           const seg_end = seg_start + phdr.p_filesz.num();
           const interpreter = new Uint8Array(
-            this.file.buffer.slice(seg_start, seg_end)
+            buffer.slice(seg_start, seg_end)
           );
           const character = new TextDecoder("utf-8")
             .decode(interpreter)
@@ -84,7 +84,7 @@ export default class Process {
       const seg_start = phdr.p_offset.num();
       const seg_end = seg_start + phdr.p_filesz.num();
       const seg_data = new Uint8Array(
-        this.file.buffer.slice(seg_start, seg_end)
+        buffer.slice(seg_start, seg_end)
       );
 
       // Map memory for ELF file
@@ -286,8 +286,9 @@ export default class Process {
     this.logger.log_memory(this.unicorn, stack_addr, 10);
   }
 
-  execute() {
-    this.load_elf();
+  execute(buffer) {
+    if (buffer === undefined) (buffer = this.file.buffer)
+    this.load_elf(buffer);
     this.set_up_stack();
 
     // Log

@@ -68,12 +68,14 @@ export default class Kernel {
           this.writeln("ERROR: invalid docker image name.");
           this.prompt();
         } else {
-          let command = buffer_array.slice(3);
-          command = this.format_cmd(command);
+          let image = buffer_array[2];
+          let args = buffer_array.slice(3);
+          args = this.format_cmd(args);
 
           this.imageManager
-            .open(buffer_array[2], command)
+            .openImage(image, args)
             .then((image) => {
+              console.log(image)
               let pid = this.get_new_pid();
               let process = new Process(pid, this, image);
 
@@ -130,27 +132,17 @@ export default class Kernel {
       let command = buffer_array;
       command = this.format_cmd(command);
       this.imageManager.command = command;
-
-      fetch("bin/" + command[0])
-        .then((response) => response.arrayBuffer())
-        .then((file) => {
+      
+      this.imageManager
+        .openFile(command[0])
+        .then((image) => {
+          console.log(image)
           let pid = this.get_new_pid();
-          let process = new Process(pid, this, new Image());
-
-          this.processes[pid] = process;
-          process.file.file_name_command = command[0];
-          process.file.file_name = command[0];
-          process.file.buffer = file;
+          let process = new Process(pid, this, image);
+          process.file.open("/"+command[0]);
           process.execute();
-
-          if (this.trapped == true) {
-            return;
-          }
+          this.processes[pid] = process;
         })
-        .catch((error) => {
-          this.writeln("ERROR: " + command[0] + ": command not found.");
-          this.prompt();
-        });
     }
   }
 
