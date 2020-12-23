@@ -5,5 +5,6 @@ export default class ImageManager {
     this.path = "";
     this.command = "";
     this.files = {};
+    this.written_files = {};
   }
 }

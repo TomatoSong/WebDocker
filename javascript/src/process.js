@@ -8,18 +8,21 @@ export default class Process {
 
     this.terminal = kernel;
     this.image = image;
+    
+    this.executableAddress = 0x0;
+    this.stackSize = 0x800000;
+    this.stackAddress = 0x7fffff800000;
+    this.interpreterAddress = 0x7f0000000000;
+    
     this.elf_entry = 0;
     this.elf_end = 0;
-    this.exit_dead = false;
+    this.exit_flag = false;
     this.last_saved_rip = 0;
-    this.command = "";
-    this.stack_size = 8192;
-    this.stack_addr = 0x800000000000 - this.stack_size;
-    this.dyld_addr = 0x7f0000000000;
 
     this.trapped = false;
     this.unicorn = new uc.Unicorn(uc.ARCH_X86, uc.MODE_64);
     this.unicorn.set_integer_type(ELF_INT_OBJECT);
+    this.command = [];
 
     this.file = new File(this.image);
     this.logger = new Logger();
@@ -33,9 +36,10 @@ export default class Process {
 
   load_interpreter(ld_so_buffer) {}
 
-  load_elf(buffer) {
+  load_executable() {
     // Create ELF file object
-    let elf = new Elf(buffer);
+    let buffer = this.file.buffer;
+    let elf = new Elf(this.file.buffer);
 
     // Check if file is ELF
     if (elf.kind() !== "elf") {
@@ -111,14 +115,12 @@ export default class Process {
     }
   }
 
-  set_up_stack() {
-    const stack_size = 8192;
-    const stack_addr = 0x800000000000 - stack_size;
-    let stack_pointer = stack_addr + stack_size;
-    let argv_pointers = [];
+  load_stack() {
+    let stack_pointer = this.stackAddress + this.stackSize;
+
 
     // Map memory for stack
-    this.unicorn.mem_map(stack_addr, stack_size, uc.PROT_ALL);
+    this.unicorn.mem_map(this.stackAddress, this.stackSize, uc.PROT_ALL);
 
     // Set up stack
     // Refer to stack layout: https://www.win.tue.nl/~aeb/linux/hh/stack-layout.html
@@ -142,27 +144,17 @@ export default class Process {
       new TextEncoder("utf-8").encode(this.image.path)
     );
     const path_ptr = stack_pointer;
-
-    if (this.command == "") {
-      // Argv strings
-      for (var i = 0; i < this.image.command.length; i++) {
+    let argv_pointers = [];
+    //ARGV strings
+      for (var i = 0; i < this.command.length; i++) {
         stack_pointer -= 1; // NULL termination of string
-        stack_pointer -= this.image.command[i].length;
+        stack_pointer -= this.command[i].length;
         this.unicorn.mem_write(
           stack_pointer,
-          new TextEncoder("utf-8").encode(this.image.command[i])
+          new TextEncoder("utf-8").encode(this.command[i])
         );
         argv_pointers.push(stack_pointer);
       }
-    } else {
-      stack_pointer -= 1; // NULL termination of string
-      stack_pointer -= this.command.length;
-      this.unicorn.mem_write(
-        stack_pointer,
-        new TextEncoder("utf-8").encode(this.command)
-      );
-      argv_pointers.push(stack_pointer);
-    }
 
     // ELF Auxiliary Table
     // Empty for now, put NULL
@@ -270,37 +262,36 @@ export default class Process {
       );
     }
 
-    // Argc (which is 64 bit)
+    // Write argc
     stack_pointer -= 8;
     this.unicorn.mem_write(
       stack_pointer,
       new Uint8Array(new ElfUInt64(argv_pointers.length).chunks.buffer)
     );
 
-    this.logger.log_memory(this.unicorn, stack_pointer, 52);
-
-    // Set stack pointer
+    // Write rsp
     this.unicorn.reg_write_i64(uc.X86_REG_RSP, stack_pointer);
-
-    // Log
-    this.logger.log_memory(this.unicorn, stack_addr, 10);
   }
 
-  execute(buffer) {
-    if (buffer === undefined) (buffer = this.file.buffer)
-    this.load_elf(buffer);
-    this.set_up_stack();
-
-    // Log
-    this.logger.log_memory(this.unicorn, this.elf_entry, 10);
-    this.logger.log_register(this.unicorn);
+  load(command) {
+    if (command[0]) {
+      this.file.open(command[0]);
+      this.command = command;
+    } else {
+      this.file.open(this.image.command[0]);
+      this.command = this.image.command;
+    }
+    
+    this.load_executable();
+    this.load_interpreter()
+    this.load_stack();
 
     // Start emulation
     this.logger.log_to_document(
       "[INFO]: emulation started at 0x" + this.elf_entry.toString(16) + "."
     );
-
-    this.unicorn.reg_write_i64(uc.X86_REG_RIP, this.elf_entry);
+    
+    // Write rip
     this.last_saved_rip = this.elf_entry;
   }
 }

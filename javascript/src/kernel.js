@@ -78,18 +78,11 @@ export default class Kernel {
               console.log(image)
               let pid = this.get_new_pid();
               let process = new Process(pid, this, image);
-
-              process.file.open(process.image.command[0]);
-              process.execute();
+              process.load(args);
               this.processes[pid] = process;
-
-              if (this.trapped == true) {
-                return;
-              }
             })
             .catch((error) => {
               this.writeln("ERROR: " + error._errorMessage + ".");
-              this.prompt();
             });
         }
       } else if (buffer_array[1] == "registry") {
@@ -139,8 +132,8 @@ export default class Kernel {
           console.log(image)
           let pid = this.get_new_pid();
           let process = new Process(pid, this, image);
-          process.file.open("/"+command[0]);
-          process.execute();
+          command[0] = "/"+command[0];
+          process.load(command);
           this.processes[pid] = process;
         })
     }
@@ -148,11 +141,7 @@ export default class Kernel {
 
   get_new_pid() {
     const max_pid = Math.max(...Object.keys(this.processes));
-    if (max_pid === -Infinity) {
-      return 1;
-    } else {
-      return max_pid + 1;
-    }
+    return max_pid === -Infinity ? 1 : max_pid + 1;
   }
 
   onTimeout() {
@@ -164,7 +153,7 @@ export default class Kernel {
       }
 
       // Should schedule for removal from process list
-      if (this.processes[key].exit_dead == true) {
+      if (this.processes[key].exit_flag == true) {
         continue;
       }
 
@@ -233,9 +222,8 @@ export default class Kernel {
           let command = process.system_call.execve_command[0];
 
           let newprocess = new Process(parseInt(key), this, process.image);
-          newprocess.command = command;
-          newprocess.file.open(command);
-          newprocess.execute();
+          newprocess.command = process.system_call.execve_command;
+          newprocess.load(process.system_call.execve_command);
           this.processes[key] = newprocess;
         }
       } catch (error) {

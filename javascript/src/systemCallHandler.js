@@ -160,7 +160,6 @@ export default class SystemCall {
 
     this.opened_files[fd] = new File(this.process.image);
     this.opened_files[fd].open(path_name);
-    alert(path_name);
     console.log(this.opened_files[fd].buffer);
     if (this.opened_files[fd].file_found == false) {
       this.unicorn.reg_write_i64(uc.X86_REG_RAX, -2);
@@ -192,11 +191,20 @@ export default class SystemCall {
 
   mmap(addr, length, prot, flags, fd, offset) {
     if (this.mmap_addr == 0) {
-      this.mmap_addr = this.process.dyld_addr;
+      this.mmap_addr = this.process.interpreterAddress;
     }
-
+    
+    this.logger.log_to_document("MMAP:")
+    this.logger.log_to_document([addr.hex(), length.hex()])
+    this.logger.log_to_document([this.mmap_addr.toString(16), length.hex()])
+    
+    // Program required this address
+    if(addr.num() > this.mmap_addr ) {
+      this.mmap_addr = addr.num()
+    }
+    
     // Assmue length is page aligned
-
+    this.logger.log_to_document([this.mmap_addr.toString(16), length.hex()])
     this.unicorn.mem_map(this.mmap_addr, length.num(), uc.PROT_ALL);
 
     if (this.opened_files[fd.num()]) {
@@ -206,10 +214,21 @@ export default class SystemCall {
           offset.num() + length.num()
         )
       );
+      if(addr.num() != 0) {
+      this.unicorn.mem_write(addr.num(), file_mapped);
+      }
+      else {
       this.unicorn.mem_write(this.mmap_addr, file_mapped);
+      }
     }
 
-    this.unicorn.reg_write_i64(uc.X86_REG_RAX, this.mmap_addr);
+      if(addr.num() != 0) {
+      this.unicorn.reg_write_i64(uc.X86_REG_RAX, addr.num());
+      }
+      else {
+      this.unicorn.reg_write_i64(uc.X86_REG_RAX, this.mmap_addr);
+      }
+    
     this.mmap_addr += length.num();
     this.syscall_yield_flag = true;
   }
@@ -330,7 +349,7 @@ export default class SystemCall {
 
   clone() {
     var original = this.process.unicorn;
-    var mem_higher = original.mem_read(0x800000000000 - 8192, 8192);
+    var stackMemory = original.mem_read(this.process.stackAddress, this.process.stackSize);
 
     var mem_lower = original.mem_read(0x401000, this.heap_addr - 0x401000);
 
@@ -379,8 +398,8 @@ export default class SystemCall {
       uc.PROT_ALL
     );
     cloned.mem_write(0x401000, mem_lower);
-    cloned.mem_map(0x800000000000 - 8192, 8192, uc.PROT_ALL);
-    cloned.mem_write(0x800000000000 - 8192, mem_higher);
+    cloned.mem_map(this.process.stackAddress, this.process.stackSize, uc.PROT_ALL);
+    cloned.mem_write(this.process.stackAddress, stackMemory);
     // fix fs
     cloned.reg_write_i64(uc.X86_REG_RAX, this.saved_arch_prctl_fs);
     cloned.reg_write_i64(uc.X86_REG_RDX, 0);
@@ -443,6 +462,7 @@ export default class SystemCall {
       argv += c;
       ptr += 1;
     }
+    console.log(argv)
 
     argv = argv.split(" ");
     argv = argv.slice(0, argv.length - 1);
@@ -460,7 +480,7 @@ export default class SystemCall {
     const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
 
     this.unicorn.emu_stop();
-    this.process.exit_dead = true;
+    this.process.exit_flag = true;
 
     if (rdi.num() != 0) {
       this.terminal.writeln("WARN: program exit with code " + rdi.num() + ".");
