@@ -42,7 +42,7 @@ export default class Shell {
 
   reset_buffer() {
     this.buffer = "docker run alpine /lib/ld-musl-x86_64.so.1 /bin/arch --version";
-    //this.buffer = "";
+    this.buffer = "";
     this.cursor = 0;
   }
 
