@@ -6,4 +6,3 @@ import SystemCall from "./systemCallHandler.js";
 import Logger from "./logger.js";
 
 export default Kernel;
-

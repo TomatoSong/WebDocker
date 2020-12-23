@@ -1,78 +1,70 @@
 import Image from "./image.js";
 
-export default class ImageManager
-{
-	constructor()
-	{
-		this.path = "";
-		this.command = "";
-		this.files = {};
-		this.images = {};
-		
-		this.registry_url = "www.simonyu.net:5000";
-		this.registry_proxy = "https://www.simonyu.net:8080/";
-		this.registry_username = "webdocker";
-		this.registry_password = "@Webdocker";
-	}
+export default class ImageManager {
+  constructor() {
+    this.path = "";
+    this.command = "";
+    this.files = {};
+    this.images = {};
 
-	async open(image_name, command)
-	{
-		// Parse image name for image tag
-		let return_image = new Image();
-		
-		let tag = "latest";
+    this.registry_url = "www.simonyu.net:5000";
+    this.registry_proxy = "https://www.simonyu.net:8080/";
+    this.registry_username = "webdocker";
+    this.registry_password = "@Webdocker";
+  }
 
-		if (image_name.split(":")[1])
-		{
-			tag = image_name.split(":")[1];
-		}
+  async open(image_name, command) {
+    // Parse image name for image tag
+    let return_image = new Image();
 
-		// Opens Docker Hub repository
-		const repo = new Container.Repository(this.registry_url, this.registry_proxy,
-											  image_name.split(":")[0]);
+    let tag = "latest";
 
-		// Set repository credentials
-		repo.setCredentials(this.registry_username, this.registry_password);
+    if (image_name.split(":")[1]) {
+      tag = image_name.split(":")[1];
+    }
 
-		// Get image
-		const image = await repo.Image(tag);
+    // Opens Docker Hub repository
+    const repo = new Container.Repository(
+      this.registry_url,
+      this.registry_proxy,
+      image_name.split(":")[0]
+    );
 
-		// Get image config
-		const config = await image.Config;
-		const config_json = await config.JSON;
-		const config_json_config = await config_json.config;
-		const config_json_config_env = await config_json_config.Env;
-		const config_json_config_cmd = await config_json_config.Cmd;
-		return_image.path = config_json_config_env[0];
+    // Set repository credentials
+    repo.setCredentials(this.registry_username, this.registry_password);
 
-		if (command.length == 0)
-		{
-			return_image.command = config_json_config_cmd;
-		}
-		else
-		{
-			return_image.command = command;
-		}
+    // Get image
+    const image = await repo.Image(tag);
 
-		// Get layers
-		const layers = await image.Layers;
+    // Get image config
+    const config = await image.Config;
+    const config_json = await config.JSON;
+    const config_json_config = await config_json.config;
+    const config_json_config_env = await config_json_config.Env;
+    const config_json_config_cmd = await config_json_config.Cmd;
+    return_image.path = config_json_config_env[0];
 
-		// Parse layers into dictionary
-		for (let i = 0; i < layers.length; i++)
-		{
-			const layerArrayBuffer = await layers[i].arrayBuffer;
-			const unzipped = pako.ungzip(layerArrayBuffer).buffer;
-			const files = await untar(unzipped);
-			
-			return_image.files = files.reduce(
-				(files, file) => {
-					files[file.name] = file;
-					return files;
-				},
-				this.files
-			);
-		}
-		
-		return return_image;
-	}
+    if (command.length == 0) {
+      return_image.command = config_json_config_cmd;
+    } else {
+      return_image.command = command;
+    }
+
+    // Get layers
+    const layers = await image.Layers;
+
+    // Parse layers into dictionary
+    for (let i = 0; i < layers.length; i++) {
+      const layerArrayBuffer = await layers[i].arrayBuffer;
+      const unzipped = pako.ungzip(layerArrayBuffer).buffer;
+      const files = await untar(unzipped);
+
+      return_image.files = files.reduce((files, file) => {
+        files[file.name] = file;
+        return files;
+      }, this.files);
+    }
+
+    return return_image;
+  }
 }
