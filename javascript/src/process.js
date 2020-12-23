@@ -4,11 +4,11 @@ import SystemCall from "./systemCallHandler.js";
 
 export default class Process
 {
-    constructor(pid, terminal, image)
+    constructor(pid, kernel, image)
 	{
 		this.pid = pid;
 		this.trapped = false;
-		this.terminal = terminal;
+		this.terminal = kernel;
 		this.image = image;
 		this.elf_entry = 0;
 		this.elf_end = 0;
@@ -129,7 +129,6 @@ export default class Process
 		stack_pointer -= this.file.file_name_command.length;
 		this.unicorn.mem_write(stack_pointer,
 							   new TextEncoder("utf-8").encode(this.file.file_name_command));
-        console.log(this.file.file_name_command)
 
 		// Environment string
 		// Empty for now
@@ -150,7 +149,6 @@ export default class Process
 								   new TextEncoder("utf-8").encode(this.image.command[i]));
 			argv_pointers.push(stack_pointer);
 		}
-		console.log(this.image.command)
 		}
 		else
 		{
@@ -253,7 +251,6 @@ export default class Process
 		this.logger.log_to_document("[INFO]: emulation started at 0x" +
 									this.elf_entry.toString(16) + ".");
 								 
-	    console.log(this.elf_entry);
 	    this.unicorn.reg_write_i64(uc.X86_REG_RIP, this.elf_entry)
 		this.last_saved_rip = this.elf_entry;
 	}

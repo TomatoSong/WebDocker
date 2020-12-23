@@ -11,6 +11,7 @@ export default class SystemCall
 		this.terminal = terminal;
 		this.logger = logger;
 
+        this.errno = 0;
 		this.heap_addr = 0;
 		this.mmap_addr = 0;
 		this.data_end = 0;
@@ -104,15 +105,15 @@ export default class SystemCall
 
 			this.unicorn.mem_write(rsi, new TextEncoder("utf-8").encode(buffer));
 			this.unicorn.reg_write_i64(uc.X86_REG_RAX, buffer.length);
-			this.terminal.trapped = false;
-			this.terminal.trapped_pid = -1;
+			this.terminal.shell.trapped = false;
+			this.terminal.shell.trapped_pid = -1;
 			this.continue_read_rip = 0
 		}
 		else
 		{
 		    this.process.trapped = true;
-			this.terminal.trapped = true;
-			this.terminal.trapped_pid = this.process.pid;
+			this.terminal.shell.trapped = true;
+			this.terminal.shell.trapped_pid = this.process.pid;
 			this.continue_read_rip = rip;
 			this.unicorn.emu_stop();
 		}
@@ -486,7 +487,7 @@ export default class SystemCall
 		{
 			this.terminal.writeln("WARN: program exit with code " + rdi.num() + ".");
 		}
-		this.terminal.prompt()
+		this.terminal.shell.prompt()
 	}
 
 	wait4()
@@ -628,7 +629,6 @@ export default class SystemCall
 		}
 		
 		this.unicorn.reg_write_i64(uc.X86_REG_RAX, -2);
-		console.log(this.process.image)
 		return;
 	}
 
