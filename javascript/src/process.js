@@ -12,9 +12,11 @@ export default class Process {
     this.executableAddress = 0x0;
     this.stackSize = 0x800000;
     this.stackAddress = 0x7fffff800000;
-    this.interpreterAddress = 0x7f0000000000;
+    this.interpreterAddress = 0x0000ff000000;
+    this.mmapAddress = 0x7ff000000000;
     
     this.elf_entry = 0;
+    this.interpreter_entry = 0;
     this.elf_end = 0;
     this.exit_flag = false;
     this.last_saved_rip = 0;
@@ -23,6 +25,7 @@ export default class Process {
     this.unicorn = new uc.Unicorn(uc.ARCH_X86, uc.MODE_64);
     this.unicorn.set_integer_type(ELF_INT_OBJECT);
     this.command = [];
+    this.interpreter = "";
 
     this.file = new File(this.image);
     this.logger = new Logger();
@@ -34,7 +37,63 @@ export default class Process {
     );
   }
 
-  load_interpreter(ld_so_buffer) {}
+  load_interpreter() {
+    if (this.interpreter != "") {
+      alert(this.interpreter)
+      const ld_so_filebuffer = this.image.files[this.interpreter].buffer;
+      let elf = new Elf(ld_so_filebuffer);
+      
+        // Check if file is ELF
+        if (elf.kind() !== "elf") {
+          this.logger.log_to_document("[ERROR]: ld is not an ELF file.");
+          throw "[ERROR]: not an ELF file.";
+        }
+
+        // Obtain ELF header
+        let ehdr = elf.getehdr();
+
+        // Check if file is x86_64
+        if (ehdr.e_machine.num() !== EM_X86_64) {
+          this.logger.log_to_document("[ERROR]: ld is not an x86_64 file.");
+          throw "[ERROR]: not an x86_64 file.";
+        }
+        
+        this.interpreter_entry = this.interpreterAddress + ehdr.e_entry.num();
+
+        // Write segments to memory
+        for (let i = 0; i < ehdr.e_phnum.num(); i++) {
+          const phdr = elf.getphdr(i);
+
+          if (phdr.p_type.num() !== PT_LOAD || phdr.p_filesz.num() === 0) {
+            continue;
+          }
+
+          const seg_start = phdr.p_offset.num();
+          const seg_end = seg_start + phdr.p_filesz.num();
+          const seg_data = new Uint8Array(
+            ld_so_filebuffer.slice(seg_start, seg_end)
+          );
+
+          // Map memory for ELF file
+          const seg_size = phdr.p_memsz.num();
+          const mem_start =
+            Math.floor(phdr.p_vaddr.num() / (4 * 1024)) * (4 * 1024);
+          const mem_end =
+            Math.ceil((phdr.p_vaddr.num() + seg_size) / (4 * 1024)) * (4 * 1024);
+          const mem_diff = mem_end - mem_start;
+
+          this.logger.log_to_document(
+            "[INFO]: mmap range: " +
+              (this.interpreterAddress + mem_start).toString(16) +
+              " " +
+              (this.interpreterAddress + mem_end).toString(16)
+          );
+
+          this.unicorn.mem_map(this.interpreterAddress + mem_start, mem_diff, uc.PROT_ALL);
+          this.unicorn.mem_write(this.interpreterAddress + phdr.p_vaddr.num(), seg_data);
+        }
+    }
+  }
 
   load_executable() {
     // Create ELF file object
@@ -77,10 +136,7 @@ export default class Process {
           const character = new TextDecoder("utf-8")
             .decode(interpreter)
             .slice(1, -1);
-          console.log(this.image.files[character].buffer);
-          ld_so_filebuffer = this.image.files[character].buffer;
-
-          this.load_interpreter(ld_so_filebuffer);
+          this.interpreter = character;
         }
         continue;
       }
@@ -191,9 +247,10 @@ export default class Process {
       stack_pointer,
       new Uint8Array(new ElfUInt64(0x07).chunks.buffer)
     );
+    const interpreter_base = this.interpreter == "" ? 0 : this.interpreterAddress;
     this.unicorn.mem_write(
       stack_pointer + 8,
-      new Uint8Array(new ElfUInt64(0).chunks.buffer)
+      new Uint8Array(new ElfUInt64(interpreter_base).chunks.buffer)
     );
 
     // AT_PAGESZ
@@ -288,10 +345,10 @@ export default class Process {
 
     // Start emulation
     this.logger.log_to_document(
-      "[INFO]: emulation started at 0x" + this.elf_entry.toString(16) + "."
+      "[INFO]: emulation started at 0x" + this.interpreter_entry ? this.interpreter_entry.toString(16) : this.elf_entry.toString(16) + "."
     );
     
     // Write rip
-    this.last_saved_rip = this.elf_entry;
+    this.last_saved_rip = this.interpreter_entry ? this.interpreter_entry : this.elf_entry;
   }
 }

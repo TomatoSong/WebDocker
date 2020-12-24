@@ -191,7 +191,7 @@ export default class SystemCall {
 
   mmap(addr, length, prot, flags, fd, offset) {
     if (this.mmap_addr == 0) {
-      this.mmap_addr = this.process.interpreterAddress;
+      this.mmap_addr = this.process.mmapAddress;
     }
     
     this.logger.log_to_document("MMAP:")
