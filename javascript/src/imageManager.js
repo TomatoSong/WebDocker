@@ -9,17 +9,17 @@ export default class ImageManager {
     this.registry_username = "webdocker";
     this.registry_password = "@Webdocker";
   }
-  
+
   async openFile(file_name) {
     const response = await fetch("bin/" + file_name);
     const file = await response.arrayBuffer();
-    
+
     let return_image = new Image();
-    return_image.files[file_name] = {linkname: "", buffer: file}
-    return return_image
+    return_image.files[file_name] = { linkname: "", buffer: file };
+    return return_image;
   }
 
-  async openImage(image_name, command="") {
+  async openImage(image_name, command = "") {
     // Parse image name for image tag
     let return_image = new Image();
 

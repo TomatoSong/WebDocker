@@ -75,7 +75,7 @@ export default class Kernel {
           this.imageManager
             .openImage(image, args)
             .then((image) => {
-              console.log(image)
+              console.log(image);
               let pid = this.get_new_pid();
               let process = new Process(pid, this, image);
               process.load(args);
@@ -125,17 +125,15 @@ export default class Kernel {
       let command = buffer_array;
       command = this.format_cmd(command);
       this.imageManager.command = command;
-      
-      this.imageManager
-        .openFile(command[0])
-        .then((image) => {
-          console.log(image)
-          let pid = this.get_new_pid();
-          let process = new Process(pid, this, image);
-          command[0] = "/"+command[0];
-          process.load(command);
-          this.processes[pid] = process;
-        })
+
+      this.imageManager.openFile(command[0]).then((image) => {
+        console.log(image);
+        let pid = this.get_new_pid();
+        let process = new Process(pid, this, image);
+        command[0] = "/" + command[0];
+        process.load(command);
+        this.processes[pid] = process;
+      });
     }
   }
 
@@ -183,13 +181,13 @@ export default class Kernel {
           process.system_call.continue_arch_prctl_flag = 0;
 
           process.unicorn.emu_start(
-            process.elf_entry,
-            process.elf_entry + 2,
+            process.elf_entry + process.executableBase,
+            process.elf_entry + process.executableBase + 2,
             0,
             0
           );
           process.unicorn.mem_write(
-            process.elf_entry,
+            process.elf_entry + process.executableBase,
             process.system_call.continue_arch_prctl_mem
           );
           process.unicorn.reg_write_i64(
@@ -206,7 +204,7 @@ export default class Kernel {
           );
           process.unicorn.emu_start(
             process.system_call.continue_arch_prctl_rip,
-            process.elf_end,
+            0,
             0,
             0
           );

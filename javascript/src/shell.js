@@ -41,26 +41,29 @@ export default class Shell {
   }
 
   reset_buffer() {
-    this.buffer = "docker run alpine /lib/ld-musl-x86_64.so.1 /bin/arch --version";
+    this.buffer = "docker run alpine /bin/uname";
     this.buffer = "";
     this.cursor = 0;
   }
 
   on_ctrl(keyCode) {
     switch (keyCode) {
-      case 67: { // Ctrl+C
+      case 67: {
+        // Ctrl+C
         this.writeln("");
         this.writeln('INFO: received signal: "Ctrl+C".');
         this.prompt();
         break;
       }
-      case 90: { // Ctrl+Z
+      case 90: {
+        // Ctrl+Z
         this.writeln("");
         this.writeln('INFO: received signal: "Ctrl+Z".');
         this.prompt();
         break;
       }
-      case 220: { // Ctrl+\
+      case 220: {
+        // Ctrl+\
         this.writeln("");
         this.writeln('INFO: received signal: "Ctrl+\\".');
         this.prompt();
@@ -97,7 +100,8 @@ export default class Shell {
     }
 
     switch (ev.keyCode) {
-      case 13: { // enter
+      case 13: {
+        // enter
         this.writeln("");
 
         if (this.trapped == true) {
@@ -113,7 +117,8 @@ export default class Shell {
 
         break;
       }
-      case 8: { // backspace
+      case 8: {
+        // backspace
         if (this.cursor > 0) {
           this.buffer = this.buffer.remove(this.cursor);
           this.write("\b\x1b[1P");
@@ -122,7 +127,8 @@ export default class Shell {
 
         break;
       }
-      case 37: { // arrow left
+      case 37: {
+        // arrow left
         if (
           this.cursor + this.source.length >= this.term.cols &&
           (this.cursor + this.source.length) % this.term.cols == 0
@@ -139,7 +145,8 @@ export default class Shell {
 
         break;
       }
-      case 39: { // arrow right
+      case 39: {
+        // arrow right
         if (
           (this.cursor + this.source.length) % this.term.cols ==
           this.term.cols - 1

@@ -20,7 +20,7 @@ export default class SystemCall {
     this.continue_arch_prctl_rdx = 0;
     this.continue_arch_prctl_mem = 0;
     this.saved_arch_prctl_fs = 0;
-    
+
     this.continue_read_rip = 0;
     this.syscall_yield_flag = false;
     this.execve_flag = false;
@@ -193,18 +193,18 @@ export default class SystemCall {
     if (this.mmap_addr == 0) {
       this.mmap_addr = this.process.mmapAddress;
     }
-    
-    this.logger.log_to_document("MMAP:")
-    this.logger.log_to_document([addr.hex(), length.hex()])
-    this.logger.log_to_document([this.mmap_addr.toString(16), length.hex()])
-    
+
+    this.logger.log_to_document("MMAP:");
+    this.logger.log_to_document([addr.hex(), length.hex()]);
+    this.logger.log_to_document([this.mmap_addr.toString(16), length.hex()]);
+
     // Program required this address
-    if(addr.num() > this.mmap_addr ) {
-      this.mmap_addr = addr.num()
+    if (addr.num() > this.mmap_addr) {
+      this.mmap_addr = addr.num();
     }
-    
+
     // Assmue length is page aligned
-    this.logger.log_to_document([this.mmap_addr.toString(16), length.hex()])
+    this.logger.log_to_document([this.mmap_addr.toString(16), length.hex()]);
     this.unicorn.mem_map(this.mmap_addr, length.num(), uc.PROT_ALL);
 
     if (this.opened_files[fd.num()]) {
@@ -214,21 +214,19 @@ export default class SystemCall {
           offset.num() + length.num()
         )
       );
-      if(addr.num() != 0) {
-      this.unicorn.mem_write(addr.num(), file_mapped);
-      }
-      else {
-      this.unicorn.mem_write(this.mmap_addr, file_mapped);
+      if (addr.num() != 0) {
+        this.unicorn.mem_write(addr.num(), file_mapped);
+      } else {
+        this.unicorn.mem_write(this.mmap_addr, file_mapped);
       }
     }
 
-      if(addr.num() != 0) {
+    if (addr.num() != 0) {
       this.unicorn.reg_write_i64(uc.X86_REG_RAX, addr.num());
-      }
-      else {
+    } else {
       this.unicorn.reg_write_i64(uc.X86_REG_RAX, this.mmap_addr);
-      }
-    
+    }
+
     this.mmap_addr += length.num();
     this.syscall_yield_flag = true;
   }
@@ -349,7 +347,10 @@ export default class SystemCall {
 
   clone() {
     var original = this.process.unicorn;
-    var stackMemory = original.mem_read(this.process.stackAddress, this.process.stackSize);
+    var stackMemory = original.mem_read(
+      this.process.stackAddress,
+      this.process.stackSize
+    );
 
     var mem_lower = original.mem_read(0x401000, this.heap_addr - 0x401000);
 
@@ -398,14 +399,26 @@ export default class SystemCall {
       uc.PROT_ALL
     );
     cloned.mem_write(0x401000, mem_lower);
-    cloned.mem_map(this.process.stackAddress, this.process.stackSize, uc.PROT_ALL);
+    cloned.mem_map(
+      this.process.stackAddress,
+      this.process.stackSize,
+      uc.PROT_ALL
+    );
     cloned.mem_write(this.process.stackAddress, stackMemory);
     // fix fs
     cloned.reg_write_i64(uc.X86_REG_RAX, this.saved_arch_prctl_fs);
     cloned.reg_write_i64(uc.X86_REG_RDX, 0);
     cloned.reg_write_i64(uc.X86_REG_RCX, 0xc0000100);
-    cloned.mem_write(this.elf_entry, [0x0f, 0x30]);
-    cloned.emu_start(this.elf_entry, this.elf_entry + 2, 0, 0);
+    cloned.mem_write(this.process.elf_entry + this.process.executableBase, [
+      0x0f,
+      0x30,
+    ]);
+    cloned.emu_start(
+      this.process.elf_entry + this.process.executableBase,
+      this.process.elf_entry + this.process.executableBase + 2,
+      0,
+      0
+    );
 
     cloned.reg_write_i64(uc.X86_REG_RAX, 0);
     cloned.reg_write_i64(uc.X86_REG_RBX, rbx);
@@ -462,7 +475,7 @@ export default class SystemCall {
       argv += c;
       ptr += 1;
     }
-    console.log(argv)
+    console.log(argv);
 
     argv = argv.split(" ");
     argv = argv.slice(0, argv.length - 1);
@@ -559,12 +572,18 @@ export default class SystemCall {
     this.continue_arch_prctl_rax = rax;
     this.continue_arch_prctl_rcx = rcx;
     this.continue_arch_prctl_rdx = rdx;
-    this.continue_arch_prctl_mem = this.unicorn.mem_read(this.elf_entry, 2);
+    this.continue_arch_prctl_mem = this.unicorn.mem_read(
+      this.process.elf_entry + this.process.executableBase,
+      2
+    );
     this.saved_arch_prctl_fs = rsi;
     this.unicorn.reg_write_i64(uc.X86_REG_RAX, rsi);
     this.unicorn.reg_write_i64(uc.X86_REG_RDX, 0);
     this.unicorn.reg_write_i64(uc.X86_REG_RCX, 0xc0000100);
-    this.unicorn.mem_write(this.elf_entry, [0x0f, 0x30]);
+    this.unicorn.mem_write(
+      this.process.elf_entry + this.process.executableBase,
+      [0x0f, 0x30]
+    );
     this.logger.log_to_document(["PRCTLSTOP", rdi.hex(), rsi.hex(), rip.hex()]);
 
     this.unicorn.emu_stop();
