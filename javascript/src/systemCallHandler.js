@@ -11,12 +11,12 @@ export default class SystemCall {
 
     this.heap_addr = 0;
     this.mmap_addr = 0;
-    this.continue_arch_prctl_flag = false;
-    this.continue_arch_prctl_rip = 0;
-    this.continue_arch_prctl_rax = 0;
-    this.continue_arch_prctl_rcx = 0;
-    this.continue_arch_prctl_rdx = 0;
-    this.continue_arch_prctl_mem = 0;
+    
+    this.arch_prctl_flag = false;
+    this.arch_prctl_rip = 0;
+    this.arch_prctl_rcx = 0;
+    this.arch_prctl_rdx = 0;
+    this.arch_prctl_mem = 0;
     this.saved_arch_prctl_fs = 0;
 
     this.continue_read_rip = 0;
@@ -548,52 +548,57 @@ export default class SystemCall {
     const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
     const rsi = this.unicorn.reg_read_i64(uc.X86_REG_RSI);
     const rip = this.unicorn.reg_read_i64(uc.X86_REG_RIP);
-    const rax = this.unicorn.reg_read_i64(uc.X86_REG_RAX);
-    const rcx = this.unicorn.reg_read_i64(uc.X86_REG_RCX);
-    const rdx = this.unicorn.reg_read_i64(uc.X86_REG_RDX);
     this.logger.log_to_document(["PRCTL", rdi.hex(), rsi.hex(), rip.hex()]);
+    
+    if (this.arch_prctl_rip === 0) {
+        this.arch_prctl_flag = true;
+        // Save registers and memory before clobbering them
+        this.saved_arch_prctl_fs = rsi;
+        this.arch_prctl_rip = this.unicorn.reg_read_i64(uc.X86_REG_RIP);
+        this.arch_prctl_rcx = this.unicorn.reg_read_i64(uc.X86_REG_RCX);
+        this.arch_prctl_rdx = this.unicorn.reg_read_i64(uc.X86_REG_RDX);
+        this.arch_prctl_mem = this.unicorn.mem_read(
+          this.process.executableEntry,
+          2
+        );
+        
+        // Clobber registers and memory
+        this.unicorn.reg_write_i64(uc.X86_REG_RAX, rsi);
+        this.unicorn.reg_write_i64(uc.X86_REG_RDX, 0);
+        this.unicorn.reg_write_i64(uc.X86_REG_RCX, 0xC0000100);
+        this.unicorn.mem_write(
+          this.process.executableEntry,
+          [0x0f, 0x30]
+        );
+        this.logger.log_to_document(["PRCTLSTOP", rdi.hex(), rsi.hex(), rip.hex()]);
 
+        this.unicorn.emu_stop();
+        return;
+    } else {
+      // Restore registers and memory
+      this.arch_prctl_rip = 0;
+      this.process.unicorn.mem_write(
+            this.process.executableEntry,
+            this.process.system_call.arch_prctl_mem
+      );
+      this.process.unicorn.reg_write_i64(
+            uc.X86_REG_RCX,
+            this.process.system_call.continue_arch_prctl_rcx
+          );
+      this.process.unicorn.reg_write_i64(
+            uc.X86_REG_RDX,
+            this.process.system_call.continue_arch_prctl_rdx
+          );
 
-    if (this.continue_arch_prctl_rip == rip.num()) {
-      this.logger.log_to_document([
-        "Returning",
-        rdi.hex(),
-        rsi.hex(),
-        rip.hex(),
-      ]);
-      this.continue_arch_prctl_flag = false;
-      this.continue_arch_prctl_rip = 0;
-      this.continue_arch_prctl_rax = 0;
-      this.continue_arch_prctl_rcx = 0;
-      this.continue_arch_prctl_rdx = 0;
-      this.continue_arch_prctl_mem = 0;
+      // Reset temporary variable
+      this.arch_prctl_rcx = 0;
+      this.arch_prctl_rdx = 0;
+      this.arch_prctl_mem = [];
+      
       this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
       this.syscall_yield_flag = true;
       return;
     }
-
-    this.continue_arch_prctl_flag = true;
-    this.continue_arch_prctl_rip = rip.num();
-    this.continue_arch_prctl_rax = rax;
-    this.continue_arch_prctl_rcx = rcx;
-    this.continue_arch_prctl_rdx = rdx;
-    this.continue_arch_prctl_mem = this.unicorn.mem_read(
-      this.process.executableEntry,
-      2
-    );
-    this.saved_arch_prctl_fs = rsi;
-    this.unicorn.reg_write_i64(uc.X86_REG_RAX, rsi);
-    this.unicorn.reg_write_i64(uc.X86_REG_RDX, 0);
-    this.unicorn.reg_write_i64(uc.X86_REG_RCX, 0xc0000100);
-    this.unicorn.mem_write(
-      this.process.executableEntry,
-      [0x0f, 0x30]
-    );
-    this.logger.log_to_document(["PRCTLSTOP", rdi.hex(), rsi.hex(), rip.hex()]);
-
-    this.unicorn.emu_stop();
-
-    return;
   }
 
   gettid() {

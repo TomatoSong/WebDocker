@@ -191,8 +191,8 @@ export default class Kernel {
         // Yielded for other processes' system call, or
         // Special handling of system calls that require emulator to stop before modifying states
 
-        if (process.system_call.continue_arch_prctl_flag) {
-          process.system_call.continue_arch_prctl_flag = 0;
+        if (process.system_call.arch_prctl_flag) {
+          process.system_call.arch_prctl_flag = 0;
 
           process.unicorn.emu_start(
             process.executableEntry,
@@ -200,24 +200,13 @@ export default class Kernel {
             0,
             0
           );
-          process.unicorn.mem_write(
-            process.executableEntry,
-            process.system_call.continue_arch_prctl_mem
-          );
           process.unicorn.reg_write_i64(
             uc.X86_REG_RAX,
-            process.system_call.continue_arch_prctl_rax
+            158
           );
-          process.unicorn.reg_write_i64(
-            uc.X86_REG_RDX,
-            process.system_call.continue_arch_prctl_rdx
-          );
-          process.unicorn.reg_write_i64(
-            uc.X86_REG_RCX,
-            process.system_call.continue_arch_prctl_rcx
-          );
+
           process.unicorn.emu_start(
-            process.system_call.continue_arch_prctl_rip,
+            process.system_call.arch_prctl_rip,
             0,
             0,
             0
