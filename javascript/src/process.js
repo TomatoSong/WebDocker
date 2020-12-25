@@ -21,12 +21,14 @@ export default class Process {
     this.interpreter = "";
     this.interpreterEntry = 0x0;
     
+    this.unicorn = new uc.Unicorn(uc.ARCH_X86, uc.MODE_64);
+    this.unicorn.set_integer_type(ELF_INT_OBJECT);
+    
     this.exit_flag = false;
     this.last_saved_rip = 0;
 
     this.trapped = false;
-    this.unicorn = new uc.Unicorn(uc.ARCH_X86, uc.MODE_64);
-    this.unicorn.set_integer_type(ELF_INT_OBJECT);
+
     this.command = [];
 
     this.file = new File(this.image);
@@ -186,101 +188,170 @@ export default class Process {
   }
 
   loadStack() {
-    let stack_pointer = this.stackBase + this.stackSize;
-
     // Map memory for stack
     this.unicorn.mem_map(this.stackBase, this.stackSize, uc.PROT_ALL);
 
     // Set up stack
-    // Refer to stack layout: https://www.win.tue.nl/~aeb/linux/hh/stack-layout.html
+    // with following layout: https://www.win.tue.nl/~aeb/linux/hh/stack-layout.html
+    let stackPointer = this.stackBase + this.stackSize;
 
-    // NULL pointer
-    stack_pointer -= 8;
+    // NULL
+    stackPointer -= 8;
 
-    // Program name
-    stack_pointer -= this.file.file_name_command.length;
+    // program name
+    stackPointer -= this.file.file_name_command.length + 1;
     this.unicorn.mem_write(
-      stack_pointer,
+      stackPointer,
       new TextEncoder("utf-8").encode(this.file.file_name_command)
     );
+    let programNamePointer = stackPointer;
 
-    // Environment string
-    // Empty for now
-    // PATH
-    stack_pointer -= this.image.path.length + 1;
+    // envp strings
+    let envpPointers = [];
+    stackPointer -= this.image.path.length + 1;
     this.unicorn.mem_write(
-      stack_pointer,
+      stackPointer,
       new TextEncoder("utf-8").encode(this.image.path)
     );
-    const path_ptr = stack_pointer;
-    let argv_pointers = [];
-    //ARGV strings
-    for (var i = 0; i < this.command.length; i++) {
-      stack_pointer -= 1; // NULL termination of string
-      stack_pointer -= this.command[i].length;
+    envpPointers.unshift(stackPointer);
+    
+    // argv strings
+    let argvPointers = [];
+    for (let i = this.command.length - 1; i >= 0; i--) {
+      stackPointer -= this.command[i].length + 1;
       this.unicorn.mem_write(
-        stack_pointer,
+        stackPointer,
         new TextEncoder("utf-8").encode(this.command[i])
       );
-      argv_pointers.push(stack_pointer);
+      argvPointers.unshift(stackPointer);
     }
+    
+    // Alignment
+    stackPointer -= stackPointer & 0xF;
+    
+    // auxv data
+    stackPointer -= "x86_64".length + 1;
+    this.unicorn.mem_write(
+        stackPointer,
+        new TextEncoder("utf-8").encode("x86_64")
+    );
+    let platformPointer = stackPointer;
+    stackPointer -= 16;
+    this.unicorn.mem_write(
+        stackPointer,
+        crypto.getRandomValues(new Uint8Array(16))
+    );
+    let randomPointer = stackPointer;
+    
+    // Alignment
+    stackPointer -= stackPointer & 0xF;
 
+    // auxv table
     const ehdr = this.executableElf.getehdr();
     this.phoff = ehdr.e_phoff.num();
     this.phentsize = ehdr.e_phentsize.num();
     this.phnum = ehdr.e_phnum.num();
-    // ELF Auxiliary Table
-    // Empty for now, put NULL
-    // AT_NULL
-    stack_pointer -= 16;
 
-    stack_pointer -= 192;
+    // AT_NULL 0x00
+    stackPointer -= 16;
+    
+    // AT_PLATFORM 0x0F;
+    stackPointer -= 16;
+    this.unicorn.mem_write(
+      stackPointer,
+      new Uint8Array(new ElfUInt64(0x0F).chunks.buffer)
+    );
+    this.unicorn.mem_write(
+      stackPointer + 8,
+      new Uint8Array(
+        new ElfUInt64(platformPointer).chunks.buffer
+      )
+    );
+    
+    // AT_EXECFN 0x1F
+    stackPointer -= 16;
+    this.unicorn.mem_write(
+      stackPointer,
+      new Uint8Array(new ElfUInt64(0x1F).chunks.buffer)
+    );
+    this.unicorn.mem_write(
+      stackPointer + 8,
+      new Uint8Array(
+        new ElfUInt64(programNamePointer).chunks.buffer
+      )
+    );
+    
+    // AT_RANDOM 0x19
+    stackPointer -= 16;
+    this.unicorn.mem_write(
+      stackPointer,
+      new Uint8Array(new ElfUInt64(0x19).chunks.buffer)
+    );
+    this.unicorn.mem_write(
+      stackPointer + 8,
+      new Uint8Array(
+        new ElfUInt64(randomPointer).chunks.buffer
+      )
+    );
+    
+    // AT_SECURE 0x17
+    stackPointer -= 16;
+    this.unicorn.mem_write(
+      stackPointer,
+      new Uint8Array(new ElfUInt64(0x17).chunks.buffer)
+    );
+    this.unicorn.mem_write(
+      stackPointer + 8,
+      new Uint8Array(
+        new ElfUInt64(0).chunks.buffer
+      )
+    );
 
     // AT_ENTRY
-    stack_pointer -= 16;
+    stackPointer -= 16;
     this.unicorn.mem_write(
-      stack_pointer,
+      stackPointer,
       new Uint8Array(new ElfUInt64(0x09).chunks.buffer)
     );
     this.unicorn.mem_write(
-      stack_pointer + 8,
+      stackPointer + 8,
       new Uint8Array(
         new ElfUInt64(this.executableEntry).chunks.buffer
       )
     );
     console.log((this.executableEntry).toString(16));
-
+    
     // AT_FlaGS
-    stack_pointer -= 16;
+    stackPointer -= 16;
     this.unicorn.mem_write(
-      stack_pointer,
+      stackPointer,
       new Uint8Array(new ElfUInt64(0x08).chunks.buffer)
     );
     this.unicorn.mem_write(
-      stack_pointer + 8,
+      stackPointer + 8,
       new Uint8Array(new ElfUInt64(0).chunks.buffer)
     );
 
     // AT_BASE
-    stack_pointer -= 16;
+    stackPointer -= 16;
     this.unicorn.mem_write(
-      stack_pointer,
+      stackPointer,
       new Uint8Array(new ElfUInt64(0x07).chunks.buffer)
     );
     const interpreter_base = this.interpreter == "" ? 0 : this.interpreterBase;
     this.unicorn.mem_write(
-      stack_pointer + 8,
+      stackPointer + 8,
       new Uint8Array(new ElfUInt64(interpreter_base).chunks.buffer)
     );
 
     // AT_PAGESZ
-    stack_pointer -= 16;
+    stackPointer -= 16;
     this.unicorn.mem_write(
-      stack_pointer,
+      stackPointer,
       new Uint8Array(new ElfUInt64(0x06).chunks.buffer)
     );
     this.unicorn.mem_write(
-      stack_pointer + 8,
+      stackPointer + 8,
       new Uint8Array(new ElfUInt64(0x1000).chunks.buffer)
     );
 
@@ -296,60 +367,58 @@ export default class Process {
     //);
 
     // AT_PHENT
-    stack_pointer -= 16;
+    stackPointer -= 16;
     this.unicorn.mem_write(
-      stack_pointer,
+      stackPointer,
       new Uint8Array(new ElfUInt64(0x04).chunks.buffer)
     );
     this.unicorn.mem_write(
-      stack_pointer + 8,
+      stackPointer + 8,
       new Uint8Array(new ElfUInt64(ehdr.e_phentsize.num()).chunks.buffer)
     );
 
     // AT_PHDR
-    stack_pointer -= 16;
+    stackPointer -= 16;
     this.unicorn.mem_write(
-      stack_pointer,
+      stackPointer,
       new Uint8Array(new ElfUInt64(0x03).chunks.buffer)
     );
     this.unicorn.mem_write(
-      stack_pointer + 8,
+      stackPointer + 8,
       new Uint8Array(
         new ElfUInt64(this.executableBase + ehdr.e_phoff.num()).chunks.buffer
       )
     );
 
-    // NULL that ends envp[]
-    stack_pointer -= 8;
-
-    // PATH
-    stack_pointer -= 8;
-    this.unicorn.mem_write(
-      stack_pointer,
-      new Uint8Array(new ElfUInt64(path_ptr).chunks.buffer)
-    );
-
-    // NULL that ends argv[]
-    stack_pointer -= 8;
-
-    // Argv pointers (reversed)
-    for (var i = argv_pointers.length - 1; i >= 0; i--) {
-      stack_pointer -= 8;
+    // envp pointers with NULL
+    stackPointer -= 8;
+    for (let i = envpPointers.length - 1; i >= 0; i--) {
+      stackPointer -= 8;
       this.unicorn.mem_write(
-        stack_pointer,
-        new Uint8Array(new ElfUInt64(argv_pointers[i]).chunks.buffer)
+        stackPointer,
+        new Uint8Array(new ElfUInt64(envpPointers[i]).chunks.buffer)
       );
     }
 
-    // Write argc
-    stack_pointer -= 8;
+    // argv pointers with NULL
+    stackPointer -= 8;
+    for (let i = argvPointers.length - 1; i >= 0; i--) {
+      stackPointer -= 8;
+      this.unicorn.mem_write(
+        stackPointer,
+        new Uint8Array(new ElfUInt64(argvPointers[i]).chunks.buffer)
+      );
+    }
+
+    // argc
+    stackPointer -= 8;
     this.unicorn.mem_write(
-      stack_pointer,
-      new Uint8Array(new ElfUInt64(argv_pointers.length).chunks.buffer)
+      stackPointer,
+      new Uint8Array(new ElfUInt64(argvPointers.length).chunks.buffer)
     );
 
     // Write rsp
-    this.unicorn.reg_write_i64(uc.X86_REG_RSP, stack_pointer);
+    this.unicorn.reg_write_i64(uc.X86_REG_RSP, stackPointer);
   }
 
   load(command) {

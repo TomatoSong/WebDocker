@@ -82,6 +82,7 @@ export default class Kernel {
               this.processes[pid] = process;
             })
             .catch((error) => {
+              console.log(error)
               this.writeln("ERROR: " + error._errorMessage + ".");
             });
         }
