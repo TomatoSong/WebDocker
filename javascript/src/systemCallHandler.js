@@ -189,7 +189,7 @@ export default class SystemCall {
 
   mmap(addr, length, prot, flags, fd, offset) {
     if (this.mmap_addr == 0) {
-      this.mmap_addr = this.process.mmapAddress;
+      this.mmap_addr = this.process.mmapBase;
     }
 
     this.logger.log_to_document("MMAP:");
@@ -346,7 +346,7 @@ export default class SystemCall {
   clone() {
     var original = this.process.unicorn;
     var stackMemory = original.mem_read(
-      this.process.stackAddress,
+      this.process.stackBase,
       this.process.stackSize
     );
 
@@ -398,11 +398,11 @@ export default class SystemCall {
     );
     cloned.mem_write(0x401000, mem_lower);
     cloned.mem_map(
-      this.process.stackAddress,
+      this.process.stackBase,
       this.process.stackSize,
       uc.PROT_ALL
     );
-    cloned.mem_write(this.process.stackAddress, stackMemory);
+    cloned.mem_write(this.process.stackBase, stackMemory);
     // fix fs
     cloned.reg_write_i64(uc.X86_REG_RAX, this.saved_arch_prctl_fs);
     cloned.reg_write_i64(uc.X86_REG_RDX, 0);

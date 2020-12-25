@@ -170,13 +170,6 @@ export default class Process {
         Math.ceil((phdr.p_vaddr.num() + phdr.p_memsz.num()) / 0x1000) * 0x1000;
       const segmentMemorySize = segmentMemoryTop - segmentMemoryBase;
 
-      this.logger.log_to_document(
-        "[INFO]: mmap range: " +
-          (this.interpreterBase + segmentMemoryBase).toString(16) +
-          " " +
-          (this.interpreterBase + segmentMemoryTop).toString(16)
-      );
-
       // Map and write memory
       this.unicorn.mem_map(
         this.interpreterBase + segmentMemoryBase,
