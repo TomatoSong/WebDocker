@@ -19,7 +19,7 @@ export default class Process {
     this.executableElf = null;
     this.executableEntry = 0x0;
     this.interpreter = "";
-    this.interpreter_entry = 0;
+    this.interpreterEntry = 0x0;
     
     this.exit_flag = false;
     this.last_saved_rip = 0;
@@ -46,8 +46,8 @@ export default class Process {
 
     // Check if file is ELF
     if (this.executableElf.kind() !== "elf") {
-      this.logger.log_to_document("[ERROR]: not an ELF file.");
-      throw "[ERROR]: not an ELF file.";
+      this.logger.log_to_document("[ERROR]: executable is not an ELF file.");
+      throw "[ERROR]: executable is not an ELF file.";
     }
 
     // Obtain ELF header
@@ -55,8 +55,8 @@ export default class Process {
 
     // Check if file is x86_64
     if (ehdr.e_machine.num() !== EM_X86_64) {
-      this.logger.log_to_document("[ERROR]: not an x86_64 file.");
-      throw "[ERROR]: not an x86_64 file.";
+      this.logger.log_to_document("[ERROR]: executable is not an x86_64 file.");
+      throw "[ERROR]: executable is not an x86_64 file.";
     }
 
     // Check if file is position independent
@@ -122,68 +122,74 @@ export default class Process {
   }
 
   loadInterpreter() {
+    // Check if there is no need to load interpreter
     if (this.interpreter === "") {
       return;
     }
-    const ld_so_filebuffer = this.image.files[this.interpreter].buffer;
-    let elf = new Elf(ld_so_filebuffer);
+    
+    // Create interpreter file object
+    const interpreterBuffer = this.image.files[this.interpreter.replace(/^\//, '')].buffer;
+    const interpreterElf = new Elf(interpreterBuffer);
 
-    // Check if file is ELF
-    if (elf.kind() !== "elf") {
-      this.logger.log_to_document("[ERROR]: ld is not an ELF file.");
-      throw "[ERROR]: not an ELF file.";
+    // Check if interpreter is ELF
+    if (interpreterElf.kind() !== "elf") {
+      this.logger.log_to_document("[ERROR]: interpreter is not an ELF file.");
+      throw "[ERROR]: interpreter is not an ELF file.";
     }
 
-    // Obtain ELF header
-    let ehdr = elf.getehdr();
+    // Obtain interpreter header
+    const ehdr = interpreterElf.getehdr();
 
-    // Check if file is x86_64
+    // Check if interpreter is x86_64
     if (ehdr.e_machine.num() !== EM_X86_64) {
-      this.logger.log_to_document("[ERROR]: ld is not an x86_64 file.");
-      throw "[ERROR]: not an x86_64 file.";
+      this.logger.log_to_document("[ERROR]: interpreter is not an x86_64 file.");
+      throw "[ERROR]: interpreter is not an x86_64 file.";
     }
-
-    this.interpreter_entry = this.interpreterBase + ehdr.e_entry.num();
 
     // Write segments to memory
     for (let i = 0; i < ehdr.e_phnum.num(); i++) {
-      const phdr = elf.getphdr(i);
-
+      // Obtain program header
+      const phdr = interpreterElf.getphdr(i);
+      
+      // Check if segment is loadable
       if (phdr.p_type.num() !== PT_LOAD || phdr.p_filesz.num() === 0) {
         continue;
       }
 
-      const seg_start = phdr.p_offset.num();
-      const seg_end = seg_start + phdr.p_filesz.num();
-      const seg_data = new Uint8Array(
-        ld_so_filebuffer.slice(seg_start, seg_end)
+      // Obtain segment buffer
+      const segmentFileBase = phdr.p_offset.num();
+      const segmentFileTop = segmentFileBase + phdr.p_filesz.num();
+      const segmentBuffer = new Uint8Array(
+        interpreterBuffer.slice(segmentFileBase, segmentFileTop)
       );
 
-      // Map memory for ELF file
-      const seg_size = phdr.p_memsz.num();
-      const mem_start =
-        Math.floor(phdr.p_vaddr.num() / (4 * 1024)) * (4 * 1024);
-      const mem_end =
-        Math.ceil((phdr.p_vaddr.num() + seg_size) / (4 * 1024)) * (4 * 1024);
-      const mem_diff = mem_end - mem_start;
+      // Obtain segment memory
+      const segmentMemoryBase =
+        Math.floor(phdr.p_vaddr.num() / 0x1000) * 0x1000;
+      const segmentMemoryTop =
+        Math.ceil((phdr.p_vaddr.num() + phdr.p_memsz.num()) / 0x1000) * 0x1000;
+      const segmentMemorySize = segmentMemoryTop - segmentMemoryBase;
 
       this.logger.log_to_document(
         "[INFO]: mmap range: " +
-          (this.interpreterBase + mem_start).toString(16) +
+          (this.interpreterBase + segmentMemoryBase).toString(16) +
           " " +
-          (this.interpreterBase + mem_end).toString(16)
+          (this.interpreterBase + segmentMemoryTop).toString(16)
       );
 
+      // Map and write memory
       this.unicorn.mem_map(
-        this.interpreterBase + mem_start,
-        mem_diff,
+        this.interpreterBase + segmentMemoryBase,
+        segmentMemorySize,
         uc.PROT_ALL
       );
       this.unicorn.mem_write(
         this.interpreterBase + phdr.p_vaddr.num(),
-        seg_data
+        segmentBuffer
       );
     }
+    
+    this.interpreterEntry = this.interpreterBase + ehdr.e_entry.num();
   }
 
   loadStack() {
@@ -366,8 +372,8 @@ export default class Process {
     this.loadInterpreter();
     this.loadStack();
     // Write rip
-    this.last_saved_rip = this.interpreter_entry
-      ? this.interpreter_entry
+    this.last_saved_rip = this.interpreterEntry
+      ? this.interpreterEntry
       : this.executableEntry;
     // Start emulation
     this.logger.log_to_document(
