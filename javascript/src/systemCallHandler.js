@@ -510,7 +510,7 @@ export default class SystemCall {
 
   uname(buf) {
     const FIELD_LENGTH = (1 << 6) + 1;
-    const fields = ["Linux", "WebDocker", "r0.1", "v12/18/2020", "x86_64"];
+    const fields = ["Linux\0", "WebDocker\0", "r0.1\0", "v12/18/2020\0", "x86_64\0"];
 
     fields.forEach((field, index) =>
       this.unicorn.mem_write(

@@ -41,8 +41,8 @@ export default class Shell {
   }
 
   reset_buffer() {
-    this.buffer = "docker run alpine /bin/uname";
-    //this.buffer = "";
+    this.buffer = "docker run hello-world";
+    this.buffer = "";
     this.cursor = 0;
   }
 

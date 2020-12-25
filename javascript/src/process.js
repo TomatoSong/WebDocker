@@ -15,6 +15,7 @@ export default class Process {
     this.stackBase = 0x7fffff800000;
     this.brkBase = 0;
     this.mmapBase = 0x7ff000000000;
+    this.ehdrBase = 0x800000000000;
 
     this.executableElf = null;
     this.executableEntry = 0x0;
@@ -103,6 +104,11 @@ export default class Process {
         Math.ceil((phdr.p_vaddr.num() + phdr.p_memsz.num()) / 0x1000) * 0x1000;
       const segmentMemorySize = segmentMemoryTop - segmentMemoryBase;
 
+      // Update base for ehdr table
+      if (this.ehdrBase > this.executableBase + segmentMemoryBase) {
+        this.ehdrBase = this.executableBase + segmentMemoryBase;
+      }
+      
       // Update base for brk syscall
       if (this.brkBase < this.executableBase + segmentMemoryTop) {
         this.brkBase = this.executableBase + segmentMemoryTop;
@@ -247,11 +253,6 @@ export default class Process {
     stackPointer -= stackPointer & 0xF;
 
     // auxv table
-    const ehdr = this.executableElf.getehdr();
-    this.phoff = ehdr.e_phoff.num();
-    this.phentsize = ehdr.e_phentsize.num();
-    this.phnum = ehdr.e_phnum.num();
-
     // AT_NULL 0x00
     stackPointer -= 16;
     
@@ -307,7 +308,7 @@ export default class Process {
       )
     );
 
-    // AT_ENTRY
+    // AT_ENTRY 0x09
     stackPointer -= 16;
     this.unicorn.mem_write(
       stackPointer,
@@ -319,9 +320,8 @@ export default class Process {
         new ElfUInt64(this.executableEntry).chunks.buffer
       )
     );
-    console.log((this.executableEntry).toString(16));
     
-    // AT_FlaGS
+    // AT_FLAGS 0x08
     stackPointer -= 16;
     this.unicorn.mem_write(
       stackPointer,
@@ -332,41 +332,30 @@ export default class Process {
       new Uint8Array(new ElfUInt64(0).chunks.buffer)
     );
 
-    // AT_BASE
+    const ehdr = this.executableElf.getehdr();
+    // AT_BASE 0x07
     stackPointer -= 16;
     this.unicorn.mem_write(
       stackPointer,
       new Uint8Array(new ElfUInt64(0x07).chunks.buffer)
     );
-    const interpreter_base = this.interpreter == "" ? 0 : this.interpreterBase;
     this.unicorn.mem_write(
       stackPointer + 8,
-      new Uint8Array(new ElfUInt64(interpreter_base).chunks.buffer)
+      new Uint8Array(new ElfUInt64(this.interpreter === "" ? 0 : this.interpreterBase).chunks.buffer)
     );
 
-    // AT_PAGESZ
+    // AT_PHNUM 0x05
     stackPointer -= 16;
     this.unicorn.mem_write(
       stackPointer,
-      new Uint8Array(new ElfUInt64(0x06).chunks.buffer)
+      new Uint8Array(new ElfUInt64(0x05).chunks.buffer)
     );
     this.unicorn.mem_write(
       stackPointer + 8,
-      new Uint8Array(new ElfUInt64(0x1000).chunks.buffer)
+      new Uint8Array(new ElfUInt64(ehdr.e_phnum.num()).chunks.buffer)
     );
 
-    // AT_Phnum
-    //stack_pointer -= 16;
-    //this.unicorn.mem_write(
-    //  stack_pointer,
-    //  new Uint8Array(new ElfUInt64(0x05).chunks.buffer)
-    //);
-    //this.unicorn.mem_write(
-    //  stack_pointer + 8,
-    //  new Uint8Array(new ElfUInt64(ehdr.e_phnum.num()).chunks.buffer)
-    //);
-
-    // AT_PHENT
+    // AT_PHENT 0x04
     stackPointer -= 16;
     this.unicorn.mem_write(
       stackPointer,
@@ -377,7 +366,7 @@ export default class Process {
       new Uint8Array(new ElfUInt64(ehdr.e_phentsize.num()).chunks.buffer)
     );
 
-    // AT_PHDR
+    // AT_PHDR 0x03
     stackPointer -= 16;
     this.unicorn.mem_write(
       stackPointer,
@@ -386,8 +375,19 @@ export default class Process {
     this.unicorn.mem_write(
       stackPointer + 8,
       new Uint8Array(
-        new ElfUInt64(this.executableBase + ehdr.e_phoff.num()).chunks.buffer
+        new ElfUInt64(this.ehdrBase + ehdr.e_phoff.num()).chunks.buffer
       )
+    );
+    
+    // AT_PAGESZ 0x06
+    stackPointer -= 16;
+    this.unicorn.mem_write(
+      stackPointer,
+      new Uint8Array(new ElfUInt64(0x06).chunks.buffer)
+    );
+    this.unicorn.mem_write(
+      stackPointer + 8,
+      new Uint8Array(new ElfUInt64(0x1000).chunks.buffer)
     );
 
     // envp pointers with NULL
