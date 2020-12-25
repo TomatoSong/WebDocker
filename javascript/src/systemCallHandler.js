@@ -533,6 +533,18 @@ export default class SystemCall {
   }
 
   arch_prctl() {
+    // FIXME:
+    // a) We should be able to write to uc.X86_REG_FS
+    //    using unicorn.reg_write(uc.X86_REG_FS, addr.chunks.buffer);
+    //    But this method does not seem to work
+    // b) We should also be able to write to uc.X86_REG_MSR
+    //    const fs_msr = [0x00, 0x01, 0x00, 0xc0, 0x00, 0x00, 0x00, 0x00, 0xb8, 0xe4, 0x11, 0x00];
+    //    unicorn.reg_write(uc.X86_REG_MSR, fs_msr);
+    //    And verify it with
+    //    console.log(unicorn.reg_read(uc.X86_REG_MSR, 12));
+    //    But reg_read does not allow half filled buffer
+    //    Both need a fix from upstream
+    
     const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
     const rsi = this.unicorn.reg_read_i64(uc.X86_REG_RSI);
     const rip = this.unicorn.reg_read_i64(uc.X86_REG_RIP);
@@ -541,11 +553,6 @@ export default class SystemCall {
     const rdx = this.unicorn.reg_read_i64(uc.X86_REG_RDX);
     this.logger.log_to_document(["PRCTL", rdi.hex(), rsi.hex(), rip.hex()]);
 
-    // Normal method to write FS
-    // const fsmsr = 0xC0000100;
-    // const fsmsr = [0x00, 0x01, 0x00, 0xc0, 0xb8, 0xe4, 0x11, 0x00, 0x00, 0x00, 0x00, 0x00];
-    // unicorn.reg_write(uc.X86_REG_MSR, fsmsr);
-    // console.log(unicorn.reg_read(uc.X86_REG_MSR, 12))
 
     if (this.continue_arch_prctl_rip == rip.num()) {
       this.logger.log_to_document([

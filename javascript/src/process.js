@@ -9,10 +9,12 @@ export default class Process {
     this.terminal = kernel;
     this.image = image;
 
+    // Fixed base during loading
     this.executableBase = 0x0;
     this.interpreterBase = 0x0000ff000000;
     this.stackSize = 0x800000;
     this.stackBase = 0x7fffff800000;
+    // Adjustable base during loading
     this.brkBase = 0;
     this.mmapBase = 0x7ff000000000;
     this.ehdrBase = 0x800000000000;

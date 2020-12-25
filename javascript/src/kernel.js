@@ -42,6 +42,16 @@ export default class Kernel {
 
     return command;
   }
+  
+    help() {
+    this.writeln("Currently only support minimal images")
+    this.writeln("debug [on|off] to toggle debug");
+    this.writeln("docker registry url URL to set registry. e.g. docker registry url www.simonyu.net:5000");
+    this.writeln("docker registry proxy PROXY to set CORS proxy. e.g. docker registry url https://www.simonyu.net:3000");
+    this.writeln("docker registry username USERNAME if registry requires login, otherwise leave blank");
+    this.writeln("docker registry password PASSWORD to set credential");
+    this.shell.prompt();
+  }
 
   onCmd(buffer) {
     let buffer_array = buffer.split(" ");
@@ -90,6 +100,9 @@ export default class Kernel {
         if (buffer_array[2] && buffer_array[2] == "url") {
           if (buffer_array[3] && buffer_array[3] != "") {
             this.imageManager.registry_url = buffer_array[3];
+            this.imageManager.registry_username = "";
+            this.imageManager.registry_password = "";
+
           } else {
             this.writeln("ERROR: invalid docker registry URL.");
           }
