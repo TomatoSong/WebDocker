@@ -11,8 +11,6 @@ export default class SystemCall {
 
     this.heap_addr = 0;
     this.mmap_addr = 0;
-    this.data_end = 0;
-    this.elf_entry = 0;
     this.continue_arch_prctl_flag = false;
     this.continue_arch_prctl_rip = 0;
     this.continue_arch_prctl_rax = 0;
@@ -245,7 +243,7 @@ export default class SystemCall {
     const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
 
     if (this.heap_addr == 0) {
-      this.heap_addr = this.data_end;
+      this.heap_addr = this.process.brkBase;
     }
 
     if (rdi.num() < this.heap_addr) {
@@ -409,13 +407,13 @@ export default class SystemCall {
     cloned.reg_write_i64(uc.X86_REG_RAX, this.saved_arch_prctl_fs);
     cloned.reg_write_i64(uc.X86_REG_RDX, 0);
     cloned.reg_write_i64(uc.X86_REG_RCX, 0xc0000100);
-    cloned.mem_write(this.process.elf_entry + this.process.executableBase, [
+    cloned.mem_write(this.process.executableEntry, [
       0x0f,
       0x30,
     ]);
     cloned.emu_start(
-      this.process.elf_entry + this.process.executableBase,
-      this.process.elf_entry + this.process.executableBase + 2,
+      this.process.executableEntry,
+      this.process.executableEntry + 2,
       0,
       0
     );
@@ -573,7 +571,7 @@ export default class SystemCall {
     this.continue_arch_prctl_rcx = rcx;
     this.continue_arch_prctl_rdx = rdx;
     this.continue_arch_prctl_mem = this.unicorn.mem_read(
-      this.process.elf_entry + this.process.executableBase,
+      this.process.executableEntry,
       2
     );
     this.saved_arch_prctl_fs = rsi;
@@ -581,7 +579,7 @@ export default class SystemCall {
     this.unicorn.reg_write_i64(uc.X86_REG_RDX, 0);
     this.unicorn.reg_write_i64(uc.X86_REG_RCX, 0xc0000100);
     this.unicorn.mem_write(
-      this.process.elf_entry + this.process.executableBase,
+      this.process.executableEntry,
       [0x0f, 0x30]
     );
     this.logger.log_to_document(["PRCTLSTOP", rdi.hex(), rsi.hex(), rip.hex()]);

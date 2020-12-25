@@ -181,13 +181,13 @@ export default class Kernel {
           process.system_call.continue_arch_prctl_flag = 0;
 
           process.unicorn.emu_start(
-            process.elf_entry + process.executableBase,
-            process.elf_entry + process.executableBase + 2,
+            process.executableEntry,
+            process.executableEntry + 2,
             0,
             0
           );
           process.unicorn.mem_write(
-            process.elf_entry + process.executableBase,
+            process.executableEntry,
             process.system_call.continue_arch_prctl_mem
           );
           process.unicorn.reg_write_i64(

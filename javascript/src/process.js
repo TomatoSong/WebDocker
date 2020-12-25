@@ -13,12 +13,14 @@ export default class Process {
     this.interpreterBase = 0x0000ff000000;
     this.stackSize = 0x800000;
     this.stackBase = 0x7fffff800000;
+    this.brkBase = 0;
     this.mmapBase = 0x7ff000000000;
 
     this.executableElf = null;
-    this.elf_entry = 0;
+    this.executableEntry = 0x0;
     this.interpreter = "";
     this.interpreter_entry = 0;
+    
     this.exit_flag = false;
     this.last_saved_rip = 0;
 
@@ -49,7 +51,7 @@ export default class Process {
     }
 
     // Obtain ELF header
-    let ehdr = this.executableElf.getehdr();
+    const ehdr = this.executableElf.getehdr();
 
     // Check if file is x86_64
     if (ehdr.e_machine.num() !== EM_X86_64) {
@@ -57,70 +59,66 @@ export default class Process {
       throw "[ERROR]: not an x86_64 file.";
     }
 
+    // Check if file is position independent
     if (ehdr.e_type.num() == ET_EXEC) {
       this.executableBase = 0;
     }
-    this.elf_entry = ehdr.e_entry.num();
-    this.phoff = ehdr.e_phoff.num();
-    this.phentsize = ehdr.e_phentsize.num();
-    this.phnum = ehdr.e_phnum.num();
-    this.system_call.elf_entry = this.elf_entry;
-
-    // Write segments to memory
+    
+    // Load segments to memory
     for (let i = 0; i < ehdr.e_phnum.num(); i++) {
+      // Obtain program header
       const phdr = this.executableElf.getphdr(i);
 
+      // Check if segment is loadable
       if (phdr.p_type.num() !== PT_LOAD || phdr.p_filesz.num() === 0) {
-        if (phdr.p_type.num() == PT_INTERP) {
-          const seg_start = phdr.p_offset.num();
-          const seg_end = seg_start + phdr.p_filesz.num();
-          const interpreter = new Uint8Array(
-            executableBuffer.slice(seg_start, seg_end)
+        // Check if segment is interpreter
+        if (phdr.p_type.num() === PT_INTERP) {
+          const segmentFileBase = phdr.p_offset.num();
+          const segmentFileTop = segmentFileBase + phdr.p_filesz.num();
+          const interpreterBuffer = new Uint8Array(
+            executableBuffer.slice(segmentFileBase, segmentFileTop)
           );
-          const character = new TextDecoder("utf-8")
-            .decode(interpreter)
-            .slice(1, -1);
-          this.interpreter = character;
+          
+          // Obtain interpreter file name
+          this.interpreter = new TextDecoder("utf-8")
+            .decode(interpreterBuffer)
+            .replace(/\0/g, '');
         }
         continue;
       }
 
-      const seg_start = phdr.p_offset.num();
-      const seg_end = seg_start + phdr.p_filesz.num();
-      const seg_data = new Uint8Array(
-        executableBuffer.slice(seg_start, seg_end)
+      // Obtain segment buffer
+      const segmentFileBase = phdr.p_offset.num();
+      const segmentFileTop = segmentFileBase + phdr.p_filesz.num();
+      const segmentBuffer = new Uint8Array(
+        executableBuffer.slice(segmentFileBase, segmentFileTop)
       );
-      console.log(seg_data);
-      // Map memory for ELF file
-      const seg_size = phdr.p_memsz.num();
-      const mem_start =
-        Math.floor(phdr.p_vaddr.num() / (4 * 1024)) * (4 * 1024);
-      const mem_end =
-        Math.ceil((phdr.p_vaddr.num() + seg_size) / (4 * 1024)) * (4 * 1024);
-      const mem_diff = mem_end - mem_start;
+      
+      // Obtain segment memory
+      const segmentMemoryBase =
+        Math.floor(phdr.p_vaddr.num() / 0x1000) * 0x1000;
+      const segmentMemoryTop =
+        Math.ceil((phdr.p_vaddr.num() + phdr.p_memsz.num()) / 0x1000) * 0x1000;
+      const segmentMemorySize = segmentMemoryTop - segmentMemoryBase;
 
-      this.logger.log_to_document(
-        "[INFO]: mmap range: " +
-          (this.executableBase + mem_start).toString(16) +
-          " " +
-          (this.executableBase + mem_end).toString(16)
-      );
-
-      if (this.system_call.data_end < mem_end) {
-        this.system_call.data_end = this.executableBase + mem_end;
+      // Update base for brk syscall
+      if (this.brkBase < this.executableBase + segmentMemoryTop) {
+        this.brkBase = this.executableBase + segmentMemoryTop;
       }
 
+      // Map and write memory
       this.unicorn.mem_map(
-        this.executableBase + mem_start,
-        mem_diff,
+        this.executableBase + segmentMemoryBase,
+        segmentMemorySize,
         uc.PROT_ALL
       );
       this.unicorn.mem_write(
         this.executableBase + phdr.p_vaddr.num(),
-        seg_data
+        segmentBuffer
       );
-      this.logger.log_to_document(seg_data.length);
     }
+    
+    this.executableEntry = this.executableBase + ehdr.e_entry.num();
   }
 
   loadInterpreter() {
@@ -228,6 +226,10 @@ export default class Process {
       argv_pointers.push(stack_pointer);
     }
 
+    const ehdr = this.executableElf.getehdr();
+    this.phoff = ehdr.e_phoff.num();
+    this.phentsize = ehdr.e_phentsize.num();
+    this.phnum = ehdr.e_phnum.num();
     // ELF Auxiliary Table
     // Empty for now, put NULL
     // AT_NULL
@@ -244,10 +246,10 @@ export default class Process {
     this.unicorn.mem_write(
       stack_pointer + 8,
       new Uint8Array(
-        new ElfUInt64(this.executableBase + this.elf_entry).chunks.buffer
+        new ElfUInt64(this.executableEntry).chunks.buffer
       )
     );
-    console.log((this.executableBase + this.elf_entry).toString(16));
+    console.log((this.executableEntry).toString(16));
 
     // AT_FlaGS
     stack_pointer -= 16;
@@ -284,15 +286,15 @@ export default class Process {
     );
 
     // AT_Phnum
-    stack_pointer -= 16;
-    this.unicorn.mem_write(
-      stack_pointer,
-      new Uint8Array(new ElfUInt64(0x05).chunks.buffer)
-    );
-    this.unicorn.mem_write(
-      stack_pointer + 8,
-      new Uint8Array(new ElfUInt64(this.punum).chunks.buffer)
-    );
+    //stack_pointer -= 16;
+    //this.unicorn.mem_write(
+    //  stack_pointer,
+    //  new Uint8Array(new ElfUInt64(0x05).chunks.buffer)
+    //);
+    //this.unicorn.mem_write(
+    //  stack_pointer + 8,
+    //  new Uint8Array(new ElfUInt64(ehdr.e_phnum.num()).chunks.buffer)
+    //);
 
     // AT_PHENT
     stack_pointer -= 16;
@@ -302,7 +304,7 @@ export default class Process {
     );
     this.unicorn.mem_write(
       stack_pointer + 8,
-      new Uint8Array(new ElfUInt64(this.phentsize).chunks.buffer)
+      new Uint8Array(new ElfUInt64(ehdr.e_phentsize.num()).chunks.buffer)
     );
 
     // AT_PHDR
@@ -314,7 +316,7 @@ export default class Process {
     this.unicorn.mem_write(
       stack_pointer + 8,
       new Uint8Array(
-        new ElfUInt64(this.executableBase + this.phoff).chunks.buffer
+        new ElfUInt64(this.executableBase + ehdr.e_phoff.num()).chunks.buffer
       )
     );
 
@@ -366,7 +368,7 @@ export default class Process {
     // Write rip
     this.last_saved_rip = this.interpreter_entry
       ? this.interpreter_entry
-      : this.executableBase + this.elf_entry;
+      : this.executableEntry;
     // Start emulation
     this.logger.log_to_document(
       "[INFO]: emulation started at 0x" + this.last_saved_rip.toString(16) + "."
