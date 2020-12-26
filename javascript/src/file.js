@@ -51,8 +51,9 @@ export default class File {
         if (link_name[0] == "/") {
           link_name = link_name.substr(1);
         } else {
-          // Relative link
+          if (link_name.indexOf("/") === -1) {
           link_name = prev_linkname.substr(0, prev_linkname.lastIndexOf("/") + 1) + link_name;
+          }
         }
         this.file_name = this.image.files[link_name].name;
         prev_linkname = link_name
