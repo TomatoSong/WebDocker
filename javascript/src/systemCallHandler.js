@@ -39,6 +39,7 @@ export default class SystemCall {
       1: this.write.bind(this),
       2: this.open.bind(this),
       3: this.close.bind(this),
+      4: this.stat.bind(this),
       5: this.fstat.bind(this),
       9: this.mmap.bind(this),
       10: this.mprotect.bind(this),
@@ -68,6 +69,7 @@ export default class SystemCall {
       228: this.clock_gettime.bind(this),
       231: this.exit_group.bind(this),
       235: this.utimes.bind(this),
+      257: this.openat.bind(this),
     };
   }
 
@@ -181,21 +183,34 @@ export default class SystemCall {
     this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
   }
 
-  stat() {
-    const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
-
-    let pointer = rdi;
+  stat(pathname, statbuf) {
+    
+    let pointer = pathname.num();
     let character = "";
+    character = this.unicorn.mem_read(pointer, 1);
+    character = new TextDecoder("utf-8").decode(character);
     let path_name = "";
 
     while (character.toString() != "\0") {
-      character = this.unicorn.mem_read(pointer, 1);
-      character = new TextDecoder("utf-8").decode(character);
       path_name += character;
       pointer += 1;
+      character = this.unicorn.mem_read(pointer, 1);
+      character = new TextDecoder("utf-8").decode(character);
     }
 
-    // TODO handle this
+    let file = new File(this.process.image);
+    file.open(path_name);
+    if(file.file_found == false) {return -2}
+    let file_obj = file.file_obj;
+    // nlink
+    this.unicorn.mem_write(statbuf.num() + 24, new Uint8Array(new ElfUInt64(1).chunks.buffer));
+    // size
+    this.unicorn.mem_write(statbuf.num() + 48, new Uint8Array(new ElfUInt64(file_obj.buffer.length).chunks.buffer));
+    // blksize
+    this.unicorn.mem_write(statbuf.num() + 56, new Uint8Array(new ElfUInt64(0x1000).chunks.buffer));
+    // blocks
+    this.unicorn.mem_write(statbuf.num() + 60, new Uint8Array(new ElfUInt64(Math.ceil(file_obj.buffer.length / 0x1000)).chunks.buffer));
+    return 0;
   }
   
   fstat(fd, statbuf) {
@@ -552,7 +567,7 @@ export default class SystemCall {
     const fields = [
       "Linux\0",
       "WebDocker\0",
-      "r0.2\0",
+      "5.4.0-53-generic\0",
       "v12/25/2020\0",
       "x86_64\0",
     ];
@@ -705,6 +720,10 @@ export default class SystemCall {
 
     this.unicorn.reg_write_i64(uc.X86_REG_RAX, -2);
     return;
+  }
+  
+  openat(dfd, filename, flags, mode) {
+    return this.open(filename, flags)
   }
 
   hook_system_call() {

@@ -138,9 +138,9 @@ export default class Process {
     }
 
     // Create interpreter file object
-    const interpreterBuffer = this.image.files[
-      this.interpreter.replace(/^\//, "")
-    ].buffer;
+    const interpreterFile = new File(this.image)
+    interpreterFile.open(this.interpreter.replace(/^\//, ""))
+    const interpreterBuffer = interpreterFile.buffer;
     const interpreterElf = new Elf(interpreterBuffer);
 
     // Check if interpreter is ELF
