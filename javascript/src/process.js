@@ -23,10 +23,10 @@ export default class Process {
     this.executableEntry = 0x0;
     this.interpreter = "";
     this.interpreterEntry = 0x0;
-    
+
     this.unicorn = new uc.Unicorn(uc.ARCH_X86, uc.MODE_64);
     this.unicorn.set_integer_type(ELF_INT_OBJECT);
-    
+
     this.exit_flag = false;
     this.last_saved_rip = 0;
 
@@ -68,7 +68,7 @@ export default class Process {
     if (ehdr.e_type.num() == ET_EXEC) {
       this.executableBase = 0;
     }
-    
+
     // Load segments to memory
     for (let i = 0; i < ehdr.e_phnum.num(); i++) {
       // Obtain program header
@@ -83,11 +83,11 @@ export default class Process {
           const interpreterBuffer = new Uint8Array(
             executableBuffer.slice(segmentFileBase, segmentFileTop)
           );
-          
+
           // Obtain interpreter file name
           this.interpreter = new TextDecoder("utf-8")
             .decode(interpreterBuffer)
-            .replace(/\0/g, '');
+            .replace(/\0/g, "");
         }
         continue;
       }
@@ -98,7 +98,7 @@ export default class Process {
       const segmentBuffer = new Uint8Array(
         executableBuffer.slice(segmentFileBase, segmentFileTop)
       );
-      
+
       // Obtain segment memory
       const segmentMemoryBase =
         Math.floor(phdr.p_vaddr.num() / 0x1000) * 0x1000;
@@ -110,7 +110,7 @@ export default class Process {
       if (this.ehdrBase > this.executableBase + segmentMemoryBase) {
         this.ehdrBase = this.executableBase + segmentMemoryBase;
       }
-      
+
       // Update base for brk syscall
       if (this.brkBase < this.executableBase + segmentMemoryTop) {
         this.brkBase = this.executableBase + segmentMemoryTop;
@@ -127,7 +127,7 @@ export default class Process {
         segmentBuffer
       );
     }
-    
+
     this.executableEntry = this.executableBase + ehdr.e_entry.num();
   }
 
@@ -136,9 +136,11 @@ export default class Process {
     if (this.interpreter === "") {
       return;
     }
-    
+
     // Create interpreter file object
-    const interpreterBuffer = this.image.files[this.interpreter.replace(/^\//, '')].buffer;
+    const interpreterBuffer = this.image.files[
+      this.interpreter.replace(/^\//, "")
+    ].buffer;
     const interpreterElf = new Elf(interpreterBuffer);
 
     // Check if interpreter is ELF
@@ -152,7 +154,9 @@ export default class Process {
 
     // Check if interpreter is x86_64
     if (ehdr.e_machine.num() !== EM_X86_64) {
-      this.logger.log_to_document("[ERROR]: interpreter is not an x86_64 file.");
+      this.logger.log_to_document(
+        "[ERROR]: interpreter is not an x86_64 file."
+      );
       throw "[ERROR]: interpreter is not an x86_64 file.";
     }
 
@@ -160,7 +164,7 @@ export default class Process {
     for (let i = 0; i < ehdr.e_phnum.num(); i++) {
       // Obtain program header
       const phdr = interpreterElf.getphdr(i);
-      
+
       // Check if segment is loadable
       if (phdr.p_type.num() !== PT_LOAD || phdr.p_filesz.num() === 0) {
         continue;
@@ -191,7 +195,7 @@ export default class Process {
         segmentBuffer
       );
     }
-    
+
     this.interpreterEntry = this.interpreterBase + ehdr.e_entry.num();
   }
 
@@ -222,7 +226,7 @@ export default class Process {
       new TextEncoder("utf-8").encode(this.image.path)
     );
     envpPointers.unshift(stackPointer);
-    
+
     // argv strings
     let argvPointers = [];
     for (let i = this.command.length - 1; i >= 0; i--) {
@@ -233,57 +237,53 @@ export default class Process {
       );
       argvPointers.unshift(stackPointer);
     }
-    
+
     // Alignment
-    stackPointer -= stackPointer & 0xF;
-    
+    stackPointer -= stackPointer & 0xf;
+
     // auxv data
     stackPointer -= "x86_64".length + 1;
     this.unicorn.mem_write(
-        stackPointer,
-        new TextEncoder("utf-8").encode("x86_64")
+      stackPointer,
+      new TextEncoder("utf-8").encode("x86_64")
     );
     let platformPointer = stackPointer;
     stackPointer -= 16;
     this.unicorn.mem_write(
-        stackPointer,
-        crypto.getRandomValues(new Uint8Array(16))
+      stackPointer,
+      crypto.getRandomValues(new Uint8Array(16))
     );
     let randomPointer = stackPointer;
-    
+
     // Alignment
-    stackPointer -= stackPointer & 0xF;
+    stackPointer -= stackPointer & 0xf;
 
     // auxv table
     // AT_NULL 0x00
     stackPointer -= 16;
-    
+
     // AT_PLATFORM 0x0F;
     stackPointer -= 16;
     this.unicorn.mem_write(
       stackPointer,
-      new Uint8Array(new ElfUInt64(0x0F).chunks.buffer)
+      new Uint8Array(new ElfUInt64(0x0f).chunks.buffer)
     );
     this.unicorn.mem_write(
       stackPointer + 8,
-      new Uint8Array(
-        new ElfUInt64(platformPointer).chunks.buffer
-      )
+      new Uint8Array(new ElfUInt64(platformPointer).chunks.buffer)
     );
-    
+
     // AT_EXECFN 0x1F
     stackPointer -= 16;
     this.unicorn.mem_write(
       stackPointer,
-      new Uint8Array(new ElfUInt64(0x1F).chunks.buffer)
+      new Uint8Array(new ElfUInt64(0x1f).chunks.buffer)
     );
     this.unicorn.mem_write(
       stackPointer + 8,
-      new Uint8Array(
-        new ElfUInt64(programNamePointer).chunks.buffer
-      )
+      new Uint8Array(new ElfUInt64(programNamePointer).chunks.buffer)
     );
-    
+
     // AT_RANDOM 0x19
     stackPointer -= 16;
     this.unicorn.mem_write(
@@ -292,11 +292,9 @@ export default class Process {
     );
     this.unicorn.mem_write(
       stackPointer + 8,
-      new Uint8Array(
-        new ElfUInt64(randomPointer).chunks.buffer
-      )
+      new Uint8Array(new ElfUInt64(randomPointer).chunks.buffer)
     );
-    
+
     // AT_SECURE 0x17
     stackPointer -= 16;
     this.unicorn.mem_write(
@@ -305,9 +303,7 @@ export default class Process {
     );
     this.unicorn.mem_write(
       stackPointer + 8,
-      new Uint8Array(
-        new ElfUInt64(0).chunks.buffer
-      )
+      new Uint8Array(new ElfUInt64(0).chunks.buffer)
     );
 
     // AT_ENTRY 0x09
@@ -318,11 +314,9 @@ export default class Process {
     );
     this.unicorn.mem_write(
       stackPointer + 8,
-      new Uint8Array(
-        new ElfUInt64(this.executableEntry).chunks.buffer
-      )
+      new Uint8Array(new ElfUInt64(this.executableEntry).chunks.buffer)
     );
-    
+
     // AT_FLAGS 0x08
     stackPointer -= 16;
     this.unicorn.mem_write(
@@ -343,7 +337,11 @@ export default class Process {
     );
     this.unicorn.mem_write(
       stackPointer + 8,
-      new Uint8Array(new ElfUInt64(this.interpreter === "" ? 0 : this.interpreterBase).chunks.buffer)
+      new Uint8Array(
+        new ElfUInt64(
+          this.interpreter === "" ? 0 : this.interpreterBase
+        ).chunks.buffer
+      )
     );
 
     // AT_PHNUM 0x05
@@ -380,7 +378,7 @@ export default class Process {
         new ElfUInt64(this.ehdrBase + ehdr.e_phoff.num()).chunks.buffer
       )
     );
-    
+
     // AT_PAGESZ 0x06
     stackPointer -= 16;
     this.unicorn.mem_write(

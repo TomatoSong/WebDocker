@@ -42,13 +42,19 @@ export default class Kernel {
 
     return command;
   }
-  
-    help() {
-    this.writeln("Currently only support minimal images")
+
+  help() {
+    this.writeln("Currently only support minimal images hello-world, busybox, alpine");
     this.writeln("debug [on|off] to toggle debug");
-    this.writeln("docker registry url URL to set registry. e.g. docker registry url www.simonyu.net:5000");
-    this.writeln("docker registry proxy PROXY to set CORS proxy. e.g. docker registry url https://www.simonyu.net:3000");
-    this.writeln("docker registry username USERNAME if registry requires login, otherwise leave blank");
+    this.writeln(
+      "docker registry url URL to set registry. e.g. docker registry url www.simonyu.net:5000"
+    );
+    this.writeln(
+      "docker registry proxy PROXY to set CORS proxy. e.g. docker registry url https://www.simonyu.net:3000"
+    );
+    this.writeln(
+      "docker registry username USERNAME if registry requires login, otherwise leave blank"
+    );
     this.writeln("docker registry password PASSWORD to set credential");
     this.shell.prompt();
   }
@@ -72,6 +78,8 @@ export default class Kernel {
       }
 
       this.prompt();
+    } else if (buffer_array[0] == "help") {
+      this.help()
     } else if (buffer_array[0] == "docker") {
       if (buffer_array[1] && buffer_array[1] == "run") {
         if (!buffer_array[2] || buffer_array[2] == "") {
@@ -92,7 +100,7 @@ export default class Kernel {
               this.processes[pid] = process;
             })
             .catch((error) => {
-              console.log(error)
+              console.log(error);
               this.writeln("ERROR: " + error._errorMessage + ".");
             });
         }
@@ -102,7 +110,6 @@ export default class Kernel {
             this.imageManager.registry_url = buffer_array[3];
             this.imageManager.registry_username = "";
             this.imageManager.registry_password = "";
-
           } else {
             this.writeln("ERROR: invalid docker registry URL.");
           }
@@ -185,12 +192,9 @@ export default class Kernel {
         process.last_saved_rip = this.processes[key].unicorn
           .reg_read_i64(uc.X86_REG_RIP)
           .num();
-        process.logger.log_to_document(process.last_saved_rip.toString(16));
-        //process.logger.log_register(process.unicorn)
 
-        // Yielded for other processes' system call, or
-        // Special handling of system calls that require emulator to stop before modifying states
-
+        // Handling of system calls that require a stop before modifying states
+        // OR, yielding for other processes' system call
         if (process.system_call.arch_prctl_flag) {
           process.system_call.arch_prctl_flag = 0;
 
@@ -200,10 +204,7 @@ export default class Kernel {
             0,
             0
           );
-          process.unicorn.reg_write_i64(
-            uc.X86_REG_RAX,
-            158
-          );
+          process.unicorn.reg_write_i64(uc.X86_REG_RAX, 158);
 
           process.unicorn.emu_start(
             process.system_call.arch_prctl_rip,
@@ -239,7 +240,7 @@ export default class Kernel {
         );
         process.logger.log_register(process.unicorn);
         process.logger.log_to_document(
-          "[ERROR]: Timesharine emulation failed: " + error + "."
+          "[ERROR]: Time sharing emulation failed: " + error + "."
         );
         return;
       }

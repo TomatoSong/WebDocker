@@ -79,6 +79,7 @@ export default class Shell {
     this.fitAddon.fit();
 
     this.writeln("Welcome to WebDocker!");
+    this.writeln("Type `help` for help")
     this.writeln("Usage:  docker run IMAGE [COMMAND] [ARG...]");
     this.writeln("Run a command in a new container");
     this.writeln("");

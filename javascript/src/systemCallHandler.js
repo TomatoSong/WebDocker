@@ -11,7 +11,7 @@ export default class SystemCall {
 
     this.heap_addr = 0;
     this.mmap_addr = 0;
-    
+
     this.arch_prctl_flag = false;
     this.arch_prctl_rip = 0;
     this.arch_prctl_rcx = 0;
@@ -152,6 +152,8 @@ export default class SystemCall {
       character = this.unicorn.mem_read(pointer, 1);
       character = new TextDecoder("utf-8").decode(character);
     }
+    
+    //alert(character)
 
     //get new fd
     const fd = Object.keys(this.opened_files).length;
@@ -397,20 +399,13 @@ export default class SystemCall {
       uc.PROT_ALL
     );
     cloned.mem_write(0x401000, mem_lower);
-    cloned.mem_map(
-      this.process.stackBase,
-      this.process.stackSize,
-      uc.PROT_ALL
-    );
+    cloned.mem_map(this.process.stackBase, this.process.stackSize, uc.PROT_ALL);
     cloned.mem_write(this.process.stackBase, stackMemory);
     // fix fs
     cloned.reg_write_i64(uc.X86_REG_RAX, this.saved_arch_prctl_fs);
     cloned.reg_write_i64(uc.X86_REG_RDX, 0);
     cloned.reg_write_i64(uc.X86_REG_RCX, 0xc0000100);
-    cloned.mem_write(this.process.executableEntry, [
-      0x0f,
-      0x30,
-    ]);
+    cloned.mem_write(this.process.executableEntry, [0x0f, 0x30]);
     cloned.emu_start(
       this.process.executableEntry,
       this.process.executableEntry + 2,
@@ -487,14 +482,12 @@ export default class SystemCall {
     return;
   }
 
-  exit() {
-    const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
-
+  exit(status) {
     this.unicorn.emu_stop();
     this.process.exit_flag = true;
 
-    if (rdi.num() != 0) {
-      this.terminal.writeln("WARN: program exit with code " + rdi.num() + ".");
+    if (status.num() != 0) {
+      this.terminal.writeln("WARN: program exit with code " + status.num() + ".");
     }
     this.terminal.shell.prompt();
   }
@@ -510,7 +503,13 @@ export default class SystemCall {
 
   uname(buf) {
     const FIELD_LENGTH = (1 << 6) + 1;
-    const fields = ["Linux\0", "WebDocker\0", "r0.1\0", "v12/18/2020\0", "x86_64\0"];
+    const fields = [
+      "Linux\0",
+      "WebDocker\0",
+      "r0.2\0",
+      "v12/25/2020\0",
+      "x86_64\0",
+    ];
 
     fields.forEach((field, index) =>
       this.unicorn.mem_write(
@@ -520,8 +519,7 @@ export default class SystemCall {
     );
 
     this.syscall_yield_flag = true;
-
-    this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
+    return 0;
   }
 
   getcwd() {
@@ -532,7 +530,7 @@ export default class SystemCall {
     this.syscall_yield_flag = true;
   }
 
-  arch_prctl() {
+  arch_prctl(code, addr) {
     // FIXME:
     // a) We should be able to write to uc.X86_REG_FS
     //    using unicorn.reg_write(uc.X86_REG_FS, addr.chunks.buffer);
@@ -544,66 +542,59 @@ export default class SystemCall {
     //    console.log(unicorn.reg_read(uc.X86_REG_MSR, 12));
     //    But reg_read does not allow half filled buffer
     //    Both need a fix from upstream
-    
-    const rdi = this.unicorn.reg_read_i64(uc.X86_REG_RDI);
-    const rsi = this.unicorn.reg_read_i64(uc.X86_REG_RSI);
-    const rip = this.unicorn.reg_read_i64(uc.X86_REG_RIP);
-    this.logger.log_to_document(["PRCTL", rdi.hex(), rsi.hex(), rip.hex()]);
-    
-    if (this.arch_prctl_rip === 0) {
-        this.arch_prctl_flag = true;
-        // Save registers and memory before clobbering them
-        this.saved_arch_prctl_fs = rsi;
-        this.arch_prctl_rip = this.unicorn.reg_read_i64(uc.X86_REG_RIP);
-        this.arch_prctl_rcx = this.unicorn.reg_read_i64(uc.X86_REG_RCX);
-        this.arch_prctl_rdx = this.unicorn.reg_read_i64(uc.X86_REG_RDX);
-        this.arch_prctl_mem = this.unicorn.mem_read(
-          this.process.executableEntry,
-          2
-        );
-        
-        // Clobber registers and memory
-        this.unicorn.reg_write_i64(uc.X86_REG_RAX, rsi);
-        this.unicorn.reg_write_i64(uc.X86_REG_RDX, 0);
-        this.unicorn.reg_write_i64(uc.X86_REG_RCX, 0xC0000100);
-        this.unicorn.mem_write(
-          this.process.executableEntry,
-          [0x0f, 0x30]
-        );
-        this.logger.log_to_document(["PRCTLSTOP", rdi.hex(), rsi.hex(), rip.hex()]);
 
-        this.unicorn.emu_stop();
-        return;
+    if (this.arch_prctl_rip === 0) {
+      this.arch_prctl_flag = true;
+      // Save registers and memory before clobbering them
+      this.saved_arch_prctl_fs = addr;
+      this.arch_prctl_rip = this.unicorn.reg_read_i64(uc.X86_REG_RIP);
+      this.arch_prctl_rcx = this.unicorn.reg_read_i64(uc.X86_REG_RCX);
+      this.arch_prctl_rdx = this.unicorn.reg_read_i64(uc.X86_REG_RDX);
+      this.arch_prctl_mem = this.unicorn.mem_read(
+        this.process.executableEntry,
+        2
+      );
+
+      // Clobber registers and memory
+      this.unicorn.reg_write_i64(uc.X86_REG_RAX, addr);
+      this.unicorn.reg_write_i64(uc.X86_REG_RDX, 0);
+      this.unicorn.reg_write_i64(uc.X86_REG_RCX, 0xc0000100);
+      this.unicorn.mem_write(
+        this.process.executableEntry,
+        [0x0f, 0x30] // wrmsr
+      );
+
+      this.unicorn.emu_stop();
+      return;
     } else {
       // Restore registers and memory
       this.arch_prctl_rip = 0;
       this.process.unicorn.mem_write(
-            this.process.executableEntry,
-            this.process.system_call.arch_prctl_mem
+        this.process.executableEntry,
+        this.process.system_call.arch_prctl_mem
       );
       this.process.unicorn.reg_write_i64(
-            uc.X86_REG_RCX,
-            this.process.system_call.continue_arch_prctl_rcx
-          );
+        uc.X86_REG_RCX,
+        this.process.system_call.continue_arch_prctl_rcx
+      );
       this.process.unicorn.reg_write_i64(
-            uc.X86_REG_RDX,
-            this.process.system_call.continue_arch_prctl_rdx
-          );
+        uc.X86_REG_RDX,
+        this.process.system_call.continue_arch_prctl_rdx
+      );
 
       // Reset temporary variable
       this.arch_prctl_rcx = 0;
       this.arch_prctl_rdx = 0;
       this.arch_prctl_mem = [];
-      
-      this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
+
       this.syscall_yield_flag = true;
-      return;
+      return 0;
     }
   }
 
   gettid() {
-    this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
     this.syscall_yield_flag = true;
+    return 0;
   }
 
   time(tloc) {
@@ -617,8 +608,8 @@ export default class SystemCall {
         new Uint8Array(new ElfUInt64(utcSecondsSinceEpoch).chunks.buffer)
       );
     }
-    this.unicorn.reg_write_i64(uc.X86_REG_RAX, utcSecondsSinceEpoch);
     this.syscall_yield_flag = true;
+    return utcSecondsSinceEpoch;
   }
 
   set_tid_address() {
@@ -646,8 +637,8 @@ export default class SystemCall {
     this.syscall_yield_flag = true;
   }
 
-  exit_group() {
-    this.exit();
+  exit_group(status) {
+    this.exit(status);
   }
 
   utimes(filename, times) {
@@ -687,35 +678,42 @@ export default class SystemCall {
           "." +
           rip.hex()
       );
+      this.logger.log_to_document(
+        "ERROR: missing system call: " +
+          system_call_table[rax.num()] +
+          " (" +
+          rax.num() +
+          ")" +
+          "." +
+          rip.hex()
+      );
+    } else {
+      this.logger.log_to_document(
+        "INFO: system call handled: " +
+          system_call_table[rax.num()] +
+          " (" +
+          rax.num() +
+          ")" +
+          "." +
+          rip.hex()
+      );
 
-      return;
-    }
+      const retval = this.system_call_dictionary[rax.num()](
+        rdi,
+        rsi,
+        rdx,
+        r10,
+        r8,
+        r9
+      );
+      if (retval !== undefined) {
+        this.unicorn.reg_write_i64(uc.X86_REG_RAX, retval);
+      }
 
-    this.logger.log_to_document(
-      "ERROR: systemcall handled: " +
-        system_call_table[rax.num()] +
-        " (" +
-        rax.num() +
-        ")" +
-        "." +
-        rip.hex()
-    );
-
-    const retval = this.system_call_dictionary[rax.num()](
-      rdi,
-      rsi,
-      rdx,
-      r10,
-      r8,
-      r9
-    );
-    if (retval !== undefined) {
-      this.unicorn.reg_write_i64(uc.X86_REG_RAX, retval);
-    }
-
-    if (this.syscall_yield_flag == true) {
-      this.syscall_yield_flag = false;
-      this.unicorn.emu_stop();
+      if (this.syscall_yield_flag == true) {
+        this.syscall_yield_flag = false;
+        this.unicorn.emu_stop();
+      }
     }
   }
 }
