@@ -39,6 +39,7 @@ export default class SystemCall {
       1: this.write.bind(this),
       2: this.open.bind(this),
       3: this.close.bind(this),
+      5: this.fstat.bind(this),
       9: this.mmap.bind(this),
       10: this.mprotect.bind(this),
       11: this.munmap.bind(this),
@@ -46,6 +47,7 @@ export default class SystemCall {
       13: this.rt_sigaction.bind(this),
       16: this.ioctl.bind(this),
       20: this.writev.bind(this),
+      21: this.access.bind(this),
       33: this.dup2.bind(this),
       39: this.getpid.bind(this),
       56: this.clone.bind(this),
@@ -54,6 +56,7 @@ export default class SystemCall {
       60: this.exit.bind(this),
       61: this.wait4.bind(this),
       63: this.uname.bind(this),
+      72: this.fcntl.bind(this),
       79: this.getcwd.bind(this),
       102: this.getuid.bind(this),
       103: this.syslog.bind(this),
@@ -153,7 +156,11 @@ export default class SystemCall {
       character = new TextDecoder("utf-8").decode(character);
     }
     
-    //alert(character)
+    if (path_name === "/dev/null") {
+      const fd = Object.keys(this.opened_files).length;
+      this.opened_files[fd] = 1;
+      return fd
+    }
 
     //get new fd
     const fd = Object.keys(this.opened_files).length;
@@ -161,6 +168,8 @@ export default class SystemCall {
     this.opened_files[fd] = new File(this.process.image);
     this.opened_files[fd].open(path_name);
     console.log(this.opened_files[fd].buffer);
+    console.log(this.opened_files[fd].file_found)
+    console.log(fd)
     if (this.opened_files[fd].file_found == false) {
       this.unicorn.reg_write_i64(uc.X86_REG_RAX, -2);
     } else {
@@ -188,6 +197,19 @@ export default class SystemCall {
 
     // TODO handle this
   }
+  
+  fstat(fd, statbuf) {
+    let file_obj = this.opened_files[fd.num()].file_obj;
+    // nlink
+    this.unicorn.mem_write(statbuf.num() + 24, new Uint8Array(new ElfUInt64(1).chunks.buffer));
+    // size
+    this.unicorn.mem_write(statbuf.num() + 48, new Uint8Array(new ElfUInt64(file_obj.buffer.length).chunks.buffer));
+    // blksize
+    this.unicorn.mem_write(statbuf.num() + 56, new Uint8Array(new ElfUInt64(0x1000).chunks.buffer));
+    // blocks
+    this.unicorn.mem_write(statbuf.num() + 60, new Uint8Array(new ElfUInt64(Math.ceil(file_obj.buffer.length / 0x1000)).chunks.buffer));
+    return 0;
+  }
 
   mmap(addr, length, prot, flags, fd, offset) {
     if (this.mmap_addr == 0) {
@@ -204,6 +226,7 @@ export default class SystemCall {
     }
 
     // Assmue length is page aligned
+    this.logger.log_to_document([addr.hex(), length.hex()]);
     this.logger.log_to_document([this.mmap_addr.toString(16), length.hex()]);
     this.unicorn.mem_map(this.mmap_addr, length.num(), uc.PROT_ALL);
 
@@ -308,6 +331,29 @@ export default class SystemCall {
     }
 
     this.unicorn.reg_write_i64(uc.X86_REG_RAX, bytes_written);
+  }
+  
+  access(pathname, mode) {
+    let pointer = pathname.num();
+    let character = "";
+    character = this.unicorn.mem_read(pointer, 1);
+    character = new TextDecoder("utf-8").decode(character);
+    let path_name = "";
+
+    while (character.toString() != "\0") {
+      path_name += character;
+      pointer += 1;
+      character = this.unicorn.mem_read(pointer, 1);
+      character = new TextDecoder("utf-8").decode(character);
+    }
+  
+    const file = new File(this.process.image);
+    file.open(path_name);
+    if (file.file_found == false) {
+      this.unicorn.reg_write_i64(uc.X86_REG_RAX, -2);
+    } else {
+      this.unicorn.reg_write_i64(uc.X86_REG_RAX, 0);
+    }
   }
 
   dup2(oldfd, newfd) {
@@ -519,6 +565,10 @@ export default class SystemCall {
     );
 
     this.syscall_yield_flag = true;
+    return 0;
+  }
+  
+  fcntl() {
     return 0;
   }
 

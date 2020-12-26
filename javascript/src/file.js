@@ -6,6 +6,7 @@ export default class File {
     this.buffer = [];
     this.seek = 0;
     this.file_found = true;
+    this.file_obj = {}
   }
 
   open(file_name) {
@@ -13,6 +14,7 @@ export default class File {
     this.file_name = "";
 
     let link_name = "";
+    let prev_linkname = ""
 
     if (this.file_name_command[0] === "/") {
       this.file_name_command = this.file_name_command.slice(1);
@@ -42,13 +44,18 @@ export default class File {
     }
 
     link_name = this.image.files[this.file_name_command].linkname;
+    prev_linkname = this.file_name_command
 
     if (link_name != "") {
       while (link_name != "") {
         if (link_name[0] == "/") {
           link_name = link_name.substr(1);
+        } else {
+          // Relative link
+          link_name = prev_linkname.substr(0, prev_linkname.lastIndexOf("/") + 1) + link_name;
         }
         this.file_name = this.image.files[link_name].name;
+        prev_linkname = link_name
         link_name = this.image.files[link_name].linkname;
       }
 
@@ -60,5 +67,6 @@ export default class File {
     }
 
     this.buffer = this.image.files[this.file_name].buffer;
+    this.file_obj = this.image.files[this.file_name];
   }
 }
