@@ -248,9 +248,24 @@ const Container = (function() {
     }
 
     async send() {
-      const response = await fetch(this._request, {
-        headers: this._headers
-      });
+      
+      const request = new Request(this._request.url, {headers: this._headers})
+      let response = "";
+      
+      if (window.caches) {
+        const cache = await caches.open('webdocker-cache');
+        response = await cache.match(request);
+        if (!response) {
+          response = await fetch(request);
+          if (response.status < 400) {
+            cache.put(request, response.clone())
+          }
+        }
+      } else {
+        response = await fetch(request);
+      }
+      
+      
       if (response.status !== 200) {
         if (response.status in this._errorHandlers) {
           return this._errorHandlers[response.status](response);

@@ -64,10 +64,10 @@ export default class Kernel {
 
     if (buffer === "fg") {
       this.writeln('INFO: received command: "fg".');
-      this.prompt();
+      this.shell.prompt();
     } else if (buffer === "jobs") {
       this.writeln('INFO: received command: "jobs".');
-      this.prompt();
+      this.shell.prompt();
     } else if (buffer_array[0] == "debug") {
       if (buffer_array[1] && buffer_array[1] == "on") {
         document.getElementById("container_debug").style.display = "block";
@@ -77,14 +77,14 @@ export default class Kernel {
         this.writeln("ERROR: invalid debug setting.");
       }
 
-      this.prompt();
+      this.shell.prompt();
     } else if (buffer_array[0] == "help") {
       this.help()
     } else if (buffer_array[0] == "docker") {
       if (buffer_array[1] && buffer_array[1] == "run") {
         if (!buffer_array[2] || buffer_array[2] == "") {
           this.writeln("ERROR: invalid docker image name.");
-          this.prompt();
+          this.shell.prompt();
         } else {
           let image = buffer_array[2];
           let args = buffer_array.slice(3);
@@ -135,10 +135,10 @@ export default class Kernel {
           this.writeln("ERROR: invalid docker registry command.");
         }
 
-        this.prompt();
+        this.shell.prompt();
       } else {
         this.writeln("ERROR: invalid docker command.");
-        this.prompt();
+        this.shell.prompt();
       }
     } else if (buffer_array[0] == "") {
       this.shell.prompt();
