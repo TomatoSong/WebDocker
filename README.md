@@ -1,6 +1,12 @@
 # WebDocker
 
-supported busybox commands:
+Supported images
+busybox
+alpine
+alpine/git
+alpine/make
+
+Supported busybox commands:
 sh
 ash
 arch
