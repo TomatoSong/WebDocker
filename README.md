@@ -1,10 +1,20 @@
 # WebDocker
 
 Supported images
-busybox
 alpine
+bash
+busybox
 alpine/git
 alpine/make
+alpine/socat
+
+Images to be supported
+cirros
+alpine/openssl
+photon
+toybox
+iron/go
+
 
 Supported busybox commands:
 sh
@@ -25,7 +35,6 @@ dmesg
 env
 expr
 factor
-
 false
 getopt
 hexedit

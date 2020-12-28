@@ -230,7 +230,7 @@ export default class SystemCall {
     if (this.mmap_addr == 0) {
       this.mmap_addr = this.process.mmapBase;
     }
-
+    const adjustedLength = Math.ceil(length.num()/0x1000)*0x1000;
     this.logger.log_to_document("MMAP:");
     this.logger.log_to_document([addr.hex(), length.hex()]);
     this.logger.log_to_document([this.mmap_addr.toString(16), length.hex()]);
@@ -243,7 +243,7 @@ export default class SystemCall {
     // Assmue length is page aligned
     this.logger.log_to_document([addr.hex(), length.hex()]);
     this.logger.log_to_document([this.mmap_addr.toString(16), length.hex()]);
-    this.unicorn.mem_map(this.mmap_addr, length.num(), uc.PROT_ALL);
+    this.unicorn.mem_map(this.mmap_addr, adjustedLength, uc.PROT_ALL);
 
     if (this.opened_files[fd.num()]) {
       const file_mapped = new Uint8Array(
@@ -265,7 +265,7 @@ export default class SystemCall {
       this.unicorn.reg_write_i64(uc.X86_REG_RAX, this.mmap_addr);
     }
 
-    this.mmap_addr += length.num();
+    this.mmap_addr += adjustedLength;
     this.syscall_yield_flag = true;
   }
 
