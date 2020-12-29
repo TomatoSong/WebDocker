@@ -8,6 +8,7 @@
     "http-server": "^0.12.3"
   },
   "scripts": {
+    "start": "http-server ./ -S",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
