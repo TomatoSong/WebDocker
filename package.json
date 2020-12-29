@@ -1,0 +1,29 @@
+{
+  "name": "webdocker",
+  "version": "0.2.0",
+  "description": "Browser based container runtime engine",
+  "main": "index.js",
+  "dependencies": {},
+  "devDependencies": {
+    "http-server": "^0.12.3"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TomatoSong/WebDocker.git"
+  },
+  "keywords": [
+    "emscripten",
+    "docker",
+    "virtualization",
+    "emulation"
+  ],
+  "author": "Shaoyu Meng",
+  "license": "GPL-2.0",
+  "bugs": {
+    "url": "https://github.com/TomatoSong/WebDocker/issues"
+  },
+  "homepage": "https://github.com/TomatoSong/WebDocker#readme"
+}
