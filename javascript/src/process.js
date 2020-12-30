@@ -441,5 +441,13 @@ export default class Process {
     this.logger.log_to_document(
       "[INFO]: emulation started at 0x" + this.last_saved_rip.toString(16) + "."
     );
+    
+    this.workerProcess = new Worker("./javascript/src/worker/worker.js");
+    const aBuf = this.file.buffer.slice(0)
+    this.workerProcess.onmessage = (msg) => {
+      // Worker is ready ,we can load process
+      this.workerProcess.postMessage({buffer: aBuf}, [aBuf])
+    }
+    
   }
 }

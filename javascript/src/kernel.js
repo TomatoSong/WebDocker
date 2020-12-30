@@ -59,6 +59,7 @@ export default class Kernel {
     this.shell.prompt();
   }
 
+  //These should be moved to shell!
   onCmd(buffer) {
     let buffer_array = buffer.split(" ");
 

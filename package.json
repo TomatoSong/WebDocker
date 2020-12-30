@@ -2,13 +2,13 @@
   "name": "webdocker",
   "version": "0.2.0",
   "description": "Browser based container runtime engine",
-  "main": "index.js",
+  "main": "javascript/src/index.js",
   "dependencies": {},
   "devDependencies": {
     "http-server": "^0.12.3"
   },
   "scripts": {
-    "start": "http-server ./ -S",
+    "start": "http-server -S -p 8000",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
