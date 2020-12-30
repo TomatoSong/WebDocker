@@ -24,11 +24,6 @@ if (isFunction(MUnicorn)) {
   self.postMessage("process loaded")
 }
 
-
-console.log("worker started")
-console.log(uc)
-console.log(system_call_table)
-
 let mode = "inner";
 let pausePromise = null;
 async function loop() {
@@ -43,6 +38,7 @@ async function loop() {
         }
     }
 }
+
 let workerLoop = null;
 self.onmessage = function(event) {
     var m = event.data;    
