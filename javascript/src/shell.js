@@ -10,7 +10,7 @@ export default class Shell {
   constructor(kernel) {
     // headless mode
     this.kernel = kernel;
-    this.term = new Terminal();
+    this.term = new Terminal({convertEol: true});
     this.fitAddon = new FitAddon.FitAddon();
 
     this.trapped = false;
