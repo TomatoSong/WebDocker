@@ -98,7 +98,7 @@ export default class Kernel {
               let pid = this.get_new_pid();
               let process = new Process(pid, this, image);
               process.load(args);
-              this.processes[pid] = process;
+              //this.processes[pid] = process;
             })
             .catch((error) => {
               console.log(error);
@@ -255,7 +255,7 @@ export default class Kernel {
     setTimeout(() => this.onTimeout(), 0);
     
     var terminalchannel = new BroadcastChannel('terminal');
-    terminalchannel.onmessage = (ev) => this.write(ev.data);
+    terminalchannel.onmessage = (ev) => this.writeln(ev.data);
     
     navigator.serviceWorker.register('serviceWorker.js').then(function(registration) {
       // Registration was successful

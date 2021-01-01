@@ -131,6 +131,7 @@ class SystemCall {
 
     const buffer = this.unicorn.mem_read(buf, count.num());
     const string = new TextDecoder("utf-8").decode(buffer);
+    
     const string_array = string.split("\n");
 
     for (var i = 0; i < string_array.length - 1; i++) {
