@@ -1,4 +1,5 @@
 
+var terminalchannel = new BroadcastChannel('terminal');
 
 class SystemCall {
   constructor(process, unicorn, terminal, logger) {
@@ -133,10 +134,14 @@ class SystemCall {
     const string_array = string.split("\n");
 
     for (var i = 0; i < string_array.length - 1; i++) {
-      this.terminal.writeln(string_array[i]);
+      //this.terminal.writeln(string_array[i]);
+      console.log(string_array[i])
+      terminalchannel.postMessage(string_array[i])
     }
 
-    this.terminal.write(string_array[string_array.length - 1]);
+    //this.terminal.write(string_array[string_array.length - 1]);
+    console.log(string_array[string_array.length - 1])
+    terminalchannel.postMessage(string_array[string_array.length - 1])
     this.syscall_yield_flag = true;
 
     this.unicorn.reg_write_i64(uc.X86_REG_RAX, count.num());
@@ -546,9 +551,9 @@ class SystemCall {
     this.process.exit_flag = true;
 
     if (status.num() != 0) {
-      this.terminal.writeln("WARN: program exit with code " + status.num() + ".");
+      //this.terminal.writeln("WARN: program exit with code " + status.num() + ".");
     }
-    this.terminal.shell.prompt();
+    //this.terminal.shell.prompt();
   }
 
   wait4() {
@@ -736,15 +741,7 @@ class SystemCall {
     const rip = this.unicorn.reg_read_i64(uc.X86_REG_RIP);
 
     if (!this.system_call_dictionary[rax.num()]) {
-      this.terminal.writeln(
-        "ERROR: missing system call: " +
-          system_call_table[rax.num()] +
-          " (" +
-          rax.num() +
-          ")" +
-          "." +
-          rip.hex()
-      );
+
       this.logger.log_to_document(
         "ERROR: missing system call: " +
           system_call_table[rax.num()] +

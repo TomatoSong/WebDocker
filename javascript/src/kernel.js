@@ -254,6 +254,9 @@ export default class Kernel {
   start() {
     setTimeout(() => this.onTimeout(), 0);
     
+    var terminalchannel = new BroadcastChannel('terminal');
+    terminalchannel.onmessage = (ev) => this.write(ev.data);
+    
     navigator.serviceWorker.register('serviceWorker.js').then(function(registration) {
       // Registration was successful
       console.log('ServiceWorker registration successful with scope: ', registration.scope);

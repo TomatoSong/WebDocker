@@ -31,7 +31,14 @@ class Process {
     this.command = [];
 
     this.file = new File(this.image);
-    this.logger = {log_to_document: () => {}};
+    this.logger = {log_to_document: (msg) => {console.log(msg)}};
+    
+    this.system_call = new SystemCall(
+      this,
+      this.unicorn,
+      this.terminal,
+      this.logger
+    );
 
   }
 
@@ -418,7 +425,9 @@ class Process {
       this.command = command;
     } else {
       //this.file.open(this.image.command[0]);
-      this.command = "";
+      
+      //FIXME: hardcode for web worker testing
+      this.command = ["busybox"];
     }
 
     this.loadExecutable();
