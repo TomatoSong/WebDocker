@@ -136,21 +136,6 @@ class SystemCall {
     this.syscall_yield_flag = true;
 
     return count.num()
-    
-    const string_array = string.split("\n");
-
-    for (var i = 0; i < string_array.length - 1; i++) {
-      //this.terminal.writeln(string_array[i]);
-      console.log(string_array[i])
-      terminalchannel.postMessage(string_array[i])
-    }
-
-    //this.terminal.write(string_array[string_array.length - 1]);
-    console.log(string_array[string_array.length - 1])
-    terminalchannel.postMessage(string_array[string_array.length - 1])
-    this.syscall_yield_flag = true;
-
-    this.unicorn.reg_write_i64(uc.X86_REG_RAX, count.num());
   }
 
   open(path, flags) {
