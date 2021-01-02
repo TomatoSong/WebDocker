@@ -10,7 +10,7 @@ export default class Shell {
   constructor(kernel, term) {
     // headless mode
     this.kernel = kernel;
-    this.term = term; 
+    this.term = term;
     this.fitAddon = new FitAddon.FitAddon();
 
     this.trapped = false;
@@ -79,7 +79,7 @@ export default class Shell {
     this.fitAddon.fit();
 
     this.writeln("Welcome to WebDocker!");
-    this.writeln("Type `help` for help")
+    this.writeln("Type `help` for help");
     this.writeln("Usage:  docker run IMAGE [COMMAND] [ARG...]");
     this.writeln("Run a command in a new container");
     this.writeln("");

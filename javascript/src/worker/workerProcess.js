@@ -3,7 +3,7 @@ class Process {
     this.pid = pid;
 
     this.terminal = kernel;
-    this.image = {path: "busybox"};
+    this.image = { path: "busybox" };
 
     // Fixed base during loading
     this.executableBase = 0x0;
@@ -31,15 +31,18 @@ class Process {
     this.command = [];
 
     this.file = new File(this.image);
-    this.logger = {log_to_document: (msg) => {console.log(msg)}};
-    
+    this.logger = {
+      log_to_document: (msg) => {
+        console.log(msg);
+      },
+    };
+
     this.system_call = new SystemCall(
       this,
       this.unicorn,
       this.terminal,
       this.logger
     );
-
   }
 
   loadExecutable() {
@@ -136,8 +139,8 @@ class Process {
     }
 
     // Create interpreter file object
-    const interpreterFile = new File(this.image)
-    interpreterFile.open(this.interpreter.replace(/^\//, ""))
+    const interpreterFile = new File(this.image);
+    interpreterFile.open(this.interpreter.replace(/^\//, ""));
     const interpreterBuffer = interpreterFile.buffer;
     const interpreterElf = new Elf(interpreterBuffer);
 
@@ -425,7 +428,7 @@ class Process {
       this.command = command;
     } else {
       //this.file.open(this.image.command[0]);
-      
+
       //FIXME: hardcode for web worker testing
       this.command = ["busybox"];
     }
@@ -443,4 +446,3 @@ class Process {
     );
   }
 }
-

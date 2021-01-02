@@ -6,8 +6,8 @@ export default class ImageManager {
 
     this.registry_url = "registry.hub.docker.com";
     this.registry_proxy = "https://cors-anywhere.herokuapp.com/";
-    this.registry_username = ""//"webdocker";
-    this.registry_password = ""//"@Webdocker";
+    this.registry_username = ""; //"webdocker";
+    this.registry_password = ""; //"@Webdocker";
   }
 
   async openFile(file_name) {
@@ -38,7 +38,7 @@ export default class ImageManager {
 
     // Set repository credentials
     if (this.registry_username !== "") {
-    repo.setCredentials(this.registry_username, this.registry_password);
+      repo.setCredentials(this.registry_username, this.registry_password);
     }
 
     // Get image

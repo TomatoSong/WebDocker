@@ -8,7 +8,7 @@ export default class Kernel {
     // Launch shell or we will run in headless mode
     // Terminal should be defined here in kernel and passed to sheel
     //, instead of shell
-    this.terminal = new Terminal({convertEol: true});
+    this.terminal = new Terminal({ convertEol: true });
     this.shell = new Shell(this, this.terminal);
     this.imageManager = new ImageManager();
     this.processes = {};
@@ -47,7 +47,9 @@ export default class Kernel {
   }
 
   help() {
-    this.writeln("Currently only support minimal images hello-world, busybox, alpine");
+    this.writeln(
+      "Currently only support minimal images hello-world, busybox, alpine"
+    );
     this.writeln("debug [on|off] to toggle debug");
     this.writeln(
       "docker registry url URL to set registry. e.g. docker registry url www.simonyu.net:5000"
@@ -83,7 +85,7 @@ export default class Kernel {
 
       this.shell.prompt();
     } else if (buffer_array[0] == "help") {
-      this.help()
+      this.help();
     } else if (buffer_array[0] == "docker") {
       if (buffer_array[1] && buffer_array[1] == "run") {
         if (!buffer_array[2] || buffer_array[2] == "") {
@@ -91,7 +93,7 @@ export default class Kernel {
           this.shell.prompt();
         } else {
           let image = buffer_array[2];
-          if(image.indexOf("/") === -1) {
+          if (image.indexOf("/") === -1) {
             image = "library/" + image;
           }
           let args = buffer_array.slice(3);
@@ -263,16 +265,22 @@ export default class Kernel {
     // message format will be `resource`: terminal, console, disk, network, process
     // `type` will be read write, set, signal, error
     // and `payload` for buffered data
-    var terminalchannel = new BroadcastChannel('terminal');
+    var terminalchannel = new BroadcastChannel("terminal");
     terminalchannel.onmessage = (ev) => this.write(ev.data);
-    
+
     // Set up reverse proxy in frontend, note must be in HTTPS
-    navigator.serviceWorker.register('serviceWorker.js').then(function(registration) {
-      // Registration was successful
-      console.log('ServiceWorker registration successful with scope: ', registration.scope);
-    }, function(err) {
-      // registration failed :(
-      console.log('ServiceWorker registration failed: ', err);
-    });
+    navigator.serviceWorker.register("serviceWorker.js").then(
+      function (registration) {
+        // Registration was successful
+        console.log(
+          "ServiceWorker registration successful with scope: ",
+          registration.scope
+        );
+      },
+      function (err) {
+        // registration failed :(
+        console.log("ServiceWorker registration failed: ", err);
+      }
+    );
   }
 }

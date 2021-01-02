@@ -157,11 +157,11 @@ export default class SystemCall {
       character = this.unicorn.mem_read(pointer, 1);
       character = new TextDecoder("utf-8").decode(character);
     }
-    
+
     if (path_name === "/dev/null") {
       const fd = Object.keys(this.opened_files).length;
       this.opened_files[fd] = 1;
-      return fd
+      return fd;
     }
 
     //get new fd
@@ -170,8 +170,8 @@ export default class SystemCall {
     this.opened_files[fd] = new File(this.process.image);
     this.opened_files[fd].open(path_name);
     console.log(this.opened_files[fd].buffer);
-    console.log(this.opened_files[fd].file_found)
-    console.log(fd)
+    console.log(this.opened_files[fd].file_found);
+    console.log(fd);
     if (this.opened_files[fd].file_found == false) {
       this.unicorn.reg_write_i64(uc.X86_REG_RAX, -2);
     } else {
@@ -184,7 +184,6 @@ export default class SystemCall {
   }
 
   stat(pathname, statbuf) {
-    
     let pointer = pathname.num();
     let character = "";
     character = this.unicorn.mem_read(pointer, 1);
@@ -200,29 +199,59 @@ export default class SystemCall {
 
     let file = new File(this.process.image);
     file.open(path_name);
-    if(file.file_found == false) {return -2}
+    if (file.file_found == false) {
+      return -2;
+    }
     let file_obj = file.file_obj;
     // nlink
-    this.unicorn.mem_write(statbuf.num() + 24, new Uint8Array(new ElfUInt64(1).chunks.buffer));
+    this.unicorn.mem_write(
+      statbuf.num() + 24,
+      new Uint8Array(new ElfUInt64(1).chunks.buffer)
+    );
     // size
-    this.unicorn.mem_write(statbuf.num() + 48, new Uint8Array(new ElfUInt64(file_obj.buffer.length).chunks.buffer));
+    this.unicorn.mem_write(
+      statbuf.num() + 48,
+      new Uint8Array(new ElfUInt64(file_obj.buffer.length).chunks.buffer)
+    );
     // blksize
-    this.unicorn.mem_write(statbuf.num() + 56, new Uint8Array(new ElfUInt64(0x1000).chunks.buffer));
+    this.unicorn.mem_write(
+      statbuf.num() + 56,
+      new Uint8Array(new ElfUInt64(0x1000).chunks.buffer)
+    );
     // blocks
-    this.unicorn.mem_write(statbuf.num() + 60, new Uint8Array(new ElfUInt64(Math.ceil(file_obj.buffer.length / 0x1000)).chunks.buffer));
+    this.unicorn.mem_write(
+      statbuf.num() + 60,
+      new Uint8Array(
+        new ElfUInt64(Math.ceil(file_obj.buffer.length / 0x1000)).chunks.buffer
+      )
+    );
     return 0;
   }
-  
+
   fstat(fd, statbuf) {
     let file_obj = this.opened_files[fd.num()].file_obj;
     // nlink
-    this.unicorn.mem_write(statbuf.num() + 24, new Uint8Array(new ElfUInt64(1).chunks.buffer));
+    this.unicorn.mem_write(
+      statbuf.num() + 24,
+      new Uint8Array(new ElfUInt64(1).chunks.buffer)
+    );
     // size
-    this.unicorn.mem_write(statbuf.num() + 48, new Uint8Array(new ElfUInt64(file_obj.buffer.length).chunks.buffer));
+    this.unicorn.mem_write(
+      statbuf.num() + 48,
+      new Uint8Array(new ElfUInt64(file_obj.buffer.length).chunks.buffer)
+    );
     // blksize
-    this.unicorn.mem_write(statbuf.num() + 56, new Uint8Array(new ElfUInt64(0x1000).chunks.buffer));
+    this.unicorn.mem_write(
+      statbuf.num() + 56,
+      new Uint8Array(new ElfUInt64(0x1000).chunks.buffer)
+    );
     // blocks
-    this.unicorn.mem_write(statbuf.num() + 60, new Uint8Array(new ElfUInt64(Math.ceil(file_obj.buffer.length / 0x1000)).chunks.buffer));
+    this.unicorn.mem_write(
+      statbuf.num() + 60,
+      new Uint8Array(
+        new ElfUInt64(Math.ceil(file_obj.buffer.length / 0x1000)).chunks.buffer
+      )
+    );
     return 0;
   }
 
@@ -230,7 +259,7 @@ export default class SystemCall {
     if (this.mmap_addr == 0) {
       this.mmap_addr = this.process.mmapBase;
     }
-    const adjustedLength = Math.ceil(length.num()/0x1000)*0x1000;
+    const adjustedLength = Math.ceil(length.num() / 0x1000) * 0x1000;
     this.logger.log_to_document("MMAP:");
     this.logger.log_to_document([addr.hex(), length.hex()]);
     this.logger.log_to_document([this.mmap_addr.toString(16), length.hex()]);
@@ -347,7 +376,7 @@ export default class SystemCall {
 
     this.unicorn.reg_write_i64(uc.X86_REG_RAX, bytes_written);
   }
-  
+
   access(pathname, mode) {
     let pointer = pathname.num();
     let character = "";
@@ -361,7 +390,7 @@ export default class SystemCall {
       character = this.unicorn.mem_read(pointer, 1);
       character = new TextDecoder("utf-8").decode(character);
     }
-  
+
     const file = new File(this.process.image);
     file.open(path_name);
     if (file.file_found == false) {
@@ -548,7 +577,9 @@ export default class SystemCall {
     this.process.exit_flag = true;
 
     if (status.num() != 0) {
-      this.terminal.writeln("WARN: program exit with code " + status.num() + ".");
+      this.terminal.writeln(
+        "WARN: program exit with code " + status.num() + "."
+      );
     }
     this.terminal.shell.prompt();
   }
@@ -582,7 +613,7 @@ export default class SystemCall {
     this.syscall_yield_flag = true;
     return 0;
   }
-  
+
   fcntl() {
     return 0;
   }
@@ -721,9 +752,9 @@ export default class SystemCall {
     this.unicorn.reg_write_i64(uc.X86_REG_RAX, -2);
     return;
   }
-  
+
   openat(dfd, filename, flags, mode) {
-    return this.open(filename, flags)
+    return this.open(filename, flags);
   }
 
   hook_system_call() {
