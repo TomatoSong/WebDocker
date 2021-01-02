@@ -357,12 +357,8 @@ class SystemCall {
 
       const buffer = this.unicorn.mem_read(iov_base, iov_len);
       const string = new TextDecoder("utf-8").decode(buffer);
-      const string_array = string.split("\n");
-
-      for (var j = 0; j < string_array.length - 1; j++) {
-        this.terminal.writeln(string_array[j]);
-      }
-      this.terminal.write(string_array[string_array.length - 1]);
+      terminalchannel.postMessage(string);
+      this.syscall_yield_flag = true;
 
       bytes_written += iov_len;
     }
