@@ -20,13 +20,20 @@ if (isFunction(MUnicorn)) {
   MUnicorn().then(() => {
     process = new Process();
     self.postMessage("process loaded");
-    self.onmessage = function (msg) {
+    self.onmessage = async function (msg) {
       process.file.buffer = msg.data.payload.executableBuffer;
       process.interpreterBuffer = msg.data.payload.interpreterBuffer;
       process.load(msg.data.payload.command);
 
       console.log("process loaded async");
       while (true) {
+        // Process interrupts
+        if (pausePromise) {
+        console.log("Loop paused");
+        await pausePromise;
+        console.log("Loop resumed");
+        }
+        
         // trapped on reading terminal
         if (process.trapped == true) {
           break;
@@ -111,19 +118,6 @@ channel.onmessage = function (ev) {
 
 let mode = "inner";
 let pausePromise = null;
-async function loop() {
-  for (var i = 0; i < 1000; i++) {
-    //Do stuff with unicorn emulation, the giant while loop
-    for (var j = 0; j < 1000; j++) {
-      if (pausePromise) {
-        console.log("Loop paused");
-        await pausePromise;
-        console.log("Loop resumed");
-      }
-    }
-  }
-}
-
 /*
 let workerLoop = null;
 self.onmessage = function(event) {

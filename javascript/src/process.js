@@ -447,7 +447,16 @@ export default class Process {
     const aBuf = this.file.buffer.slice(0);
     this.workerProcess.onmessage = (msg) => {
       // Worker is ready ,we can load process
-      this.workerProcess.postMessage({payload: { executableBuffer: aBuf, command: this.command, interpreterBuffer: this.interpreterBuffer }}, [aBuf]);
+      this.workerProcess.postMessage(
+        {
+          payload: {
+            executableBuffer: aBuf,
+            command: this.command,
+            interpreterBuffer: this.interpreterBuffer,
+          },
+        },
+        [aBuf]
+      );
     };
   }
 }
