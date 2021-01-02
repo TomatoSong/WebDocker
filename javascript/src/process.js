@@ -141,6 +141,7 @@ export default class Process {
     const interpreterFile = new File(this.image);
     interpreterFile.open(this.interpreter.replace(/^\//, ""));
     const interpreterBuffer = interpreterFile.buffer;
+    this.interpreterBuffer = interpreterBuffer;
     const interpreterElf = new Elf(interpreterBuffer);
 
     // Check if interpreter is ELF
@@ -446,7 +447,7 @@ export default class Process {
     const aBuf = this.file.buffer.slice(0);
     this.workerProcess.onmessage = (msg) => {
       // Worker is ready ,we can load process
-      this.workerProcess.postMessage({ buffer: aBuf }, [aBuf]);
+      this.workerProcess.postMessage({payload: { executableBuffer: aBuf, command: this.command, interpreterBuffer: this.interpreterBuffer }}, [aBuf]);
     };
   }
 }

@@ -139,9 +139,7 @@ class Process {
     }
 
     // Create interpreter file object
-    const interpreterFile = new File(this.image);
-    interpreterFile.open(this.interpreter.replace(/^\//, ""));
-    const interpreterBuffer = interpreterFile.buffer;
+    const interpreterBuffer = this.interpreterBuffer;
     const interpreterElf = new Elf(interpreterBuffer);
 
     // Check if interpreter is ELF
@@ -424,7 +422,7 @@ class Process {
 
   load(command) {
     if (command[0]) {
-      this.file.open(command[0]);
+      //this.file.open(command[0]);
       this.command = command;
     } else {
       //this.file.open(this.image.command[0]);

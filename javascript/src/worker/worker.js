@@ -21,8 +21,9 @@ if (isFunction(MUnicorn)) {
     process = new Process();
     self.postMessage("process loaded");
     self.onmessage = function (msg) {
-      process.file.buffer = msg.data.buffer;
-      process.load("");
+      process.file.buffer = msg.data.payload.executableBuffer;
+      process.interpreterBuffer = msg.data.payload.interpreterBuffer;
+      process.load(msg.data.payload.command);
 
       console.log("process loaded async");
       while (true) {
