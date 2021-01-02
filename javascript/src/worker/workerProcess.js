@@ -421,16 +421,7 @@ class Process {
   }
 
   load(command) {
-    if (command[0]) {
-      //this.file.open(command[0]);
-      this.command = command;
-    } else {
-      //this.file.open(this.image.command[0]);
-
-      //FIXME: hardcode for web worker testing
-      this.command = ["busybox"];
-    }
-
+    this.command = command;
     this.loadExecutable();
     this.loadInterpreter();
     this.loadStack();
