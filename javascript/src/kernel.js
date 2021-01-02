@@ -6,7 +6,10 @@ import Image from "./image.js";
 export default class Kernel {
   constructor(headless) {
     // Launch shell or we will run in headless mode
-    this.shell = new Shell(this);
+    // Terminal should be defined here in kernel and passed to sheel
+    //, instead of shell
+    this.terminal = new Terminal({convertEol: true});
+    this.shell = new Shell(this, this.terminal);
     this.imageManager = new ImageManager();
     this.processes = {};
 
@@ -88,6 +91,9 @@ export default class Kernel {
           this.shell.prompt();
         } else {
           let image = buffer_array[2];
+          if(image.indexOf("/") === -1) {
+            image = "library/" + image;
+          }
           let args = buffer_array.slice(3);
           args = this.format_cmd(args);
 
@@ -252,11 +258,15 @@ export default class Kernel {
   }
 
   start() {
-    setTimeout(() => this.onTimeout(), 0);
-    
+    //setTimeout(() => this.onTimeout(), 0);
+    // Setup different channels with mutex for message passing
+    // message format will be `resource`: terminal, console, disk, network, process
+    // `type` will be read write, set, signal, error
+    // and `payload` for buffered data
     var terminalchannel = new BroadcastChannel('terminal');
     terminalchannel.onmessage = (ev) => this.write(ev.data);
     
+    // Set up reverse proxy in frontend, note must be in HTTPS
     navigator.serviceWorker.register('serviceWorker.js').then(function(registration) {
       // Registration was successful
       console.log('ServiceWorker registration successful with scope: ', registration.scope);

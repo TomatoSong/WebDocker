@@ -7,10 +7,10 @@ String.prototype.remove = function (idx) {
 };
 
 export default class Shell {
-  constructor(kernel) {
+  constructor(kernel, term) {
     // headless mode
     this.kernel = kernel;
-    this.term = new Terminal({convertEol: true});
+    this.term = term; 
     this.fitAddon = new FitAddon.FitAddon();
 
     this.trapped = false;

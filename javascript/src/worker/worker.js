@@ -102,6 +102,7 @@ if (isFunction(MUnicorn)) {
         return;
       }
     }
+    self.close()
     }
   })
 } else {
