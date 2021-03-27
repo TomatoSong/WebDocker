@@ -9,7 +9,7 @@
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "react-scripts": "4.0.2",
-    "react-webdocker": "file:../../packages/react-webdocker",
+    "react-webdocker": "../../packages/react-webdocker",
     "web-vitals": "^1.0.1"
   },
   "scripts": {
