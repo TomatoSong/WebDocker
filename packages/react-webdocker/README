@@ -1,0 +1,11 @@
+To use react-webdocker package locally
+
+in main application package, yarn install and cd node_modules/react yarn link
+
+in this package yarn install and yarn link "react"
+
+then build with yarn build
+
+in man application package yarn add react-webdocker then yarn start
+
+We have decleared react in the peer-dependencies so it is the application's responsibility to install react dependency

@@ -24,12 +24,6 @@ module.exports = {
     libraryTarget: "umd",
     library: "react-webdocker"
   },
-      resolve: {      
-        alias: {          
-            'react': path.resolve(__dirname, './node_modules/react'),
-          'react-dom': path.resolve(__dirname, './node_modules/react-dom'),      
-        }  
-    },  
     externals: {      
         // Don't bundle react or react-dom      
         react: {          
