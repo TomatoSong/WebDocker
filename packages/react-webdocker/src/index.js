@@ -1,17 +1,22 @@
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useState, useRef} from "react";
 
 import { Terminal } from 'xterm';
+import 'xterm/css/xterm.css'
 
-export default () => { 
+const Card = () => { 
 
-    const [terminal, setTerminal] = useState({});
+    const [terminal, setTerminal] = useState(new Terminal());
     
-    //const terminalEl = useRef(null);
+    const terminalEl = useRef(null);
     
-    //useEffect(() => {
-    //    terminal.open(terminalEl.current);
-    //    terminal.write('Hello from \x1B[1;3;31mxterm.js\x1B[0m $ ')
-    //});
+    useEffect(() => {
+        if (terminalEl.current) {
+          terminal.open(terminalEl.current);
+          terminal.write('Hello from \x1B[1;3;31mxterm.js\x1B[0m $ ')
+       }
+    }, [terminalEl.current]);
     
-    return <div id="terminal">aaaa</div>;
+    return (<div ref={terminalEl} id="terminal"></div>)
 }
+
+export default Card;

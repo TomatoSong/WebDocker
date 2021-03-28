@@ -6,9 +6,7 @@ import Card from "react-webdocker"
 function App() {
   return (
     <div className="App">
-      <Card>
-        test
-      </Card>
+      <Card />
       <header className="App-header">
         <img src={logo} className="App-logo" alt="logo" />
         <p>
