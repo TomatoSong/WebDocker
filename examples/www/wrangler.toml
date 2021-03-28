@@ -1,0 +1,10 @@
+name = "www"
+type = "webpack"
+account_id = "3d3f4f098238c8f0ce6e611d4b46ede8"
+workers_dev = true
+route = ""
+zone_id = ""
+
+[site]
+bucket = "./build"
+entry-point = "workers-site"
