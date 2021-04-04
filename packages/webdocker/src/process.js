@@ -2,8 +2,6 @@ import File from "./file.js";
 import Logger from "./logger.js";
 import SystemCall from "./systemCallHandler.js";
 
-//import {uc} from "../lib/unicorn.min.js"
-
 export default class Process {
   constructor(pid, kernel, image) {
     this.pid = pid;
