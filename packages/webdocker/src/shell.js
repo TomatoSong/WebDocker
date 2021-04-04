@@ -11,7 +11,6 @@ export default class Shell {
     // headless mode
     this.kernel = kernel;
     this.term = term;
-    this.fitAddon = new FitAddon.FitAddon();
 
     this.trapped = false;
     this.trapped_pid = -1;
@@ -73,10 +72,6 @@ export default class Shell {
   }
 
   init() {
-    this.term.loadAddon(this.fitAddon);
-    this.term.open(document.getElementById("container_terminal"));
-    this.term.focus();
-    this.fitAddon.fit();
 
     this.writeln("Welcome to WebDocker!");
     this.writeln("Type `help` for help");

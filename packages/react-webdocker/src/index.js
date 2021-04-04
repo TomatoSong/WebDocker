@@ -3,20 +3,18 @@ import React, {useEffect, useState, useRef} from "react";
 import { Terminal } from 'xterm';
 import 'xterm/css/xterm.css'
 
-const Card = () => { 
+import { DockerContext } from "./WebDockerContext";
+import { UI } from "./WebDockerUI";
 
-    const [terminal, setTerminal] = useState(new Terminal());
+import Kernel from "webdocker";
+
+const Card = () => {
     
-    const terminalEl = useRef(null);
-    
-    useEffect(() => {
-        if (terminalEl.current) {
-          terminal.open(terminalEl.current);
-          terminal.write('Hello from \x1B[1;3;31mxterm.js\x1B[0m $ ')
-       }
-    }, [terminalEl.current]);
-    
-    return (<div ref={terminalEl} id="terminal"></div>)
+    return (
+       <DockerContext.Provider value={new Kernel()}>
+        <UI />
+       </DockerContext.Provider>
+    )
 }
 
 export default Card;

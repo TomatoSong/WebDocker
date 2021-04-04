@@ -4,16 +4,17 @@ import Shell from "./shell.js";
 import Image from "./image.js";
 
 export default class Kernel {
-  constructor(headless) {
+  constructor(terminal) {
     // Launch shell or we will run in headless mode
     // Terminal should be defined here in kernel and passed to sheel
     //, instead of shell
-    this.terminal = new Terminal({ convertEol: true });
-    this.shell = new Shell(this, this.terminal);
+    //this.terminal = terminal;
+    //this.shell = new Shell(this, this.terminal);
     this.imageManager = new ImageManager();
     this.processes = {};
+    this.terminal = null;
 
-    this.start();
+    //this.start();
   }
 
   write(string) {
@@ -62,6 +63,11 @@ export default class Kernel {
     );
     this.writeln("docker registry password PASSWORD to set credential");
     this.shell.prompt();
+  }
+  
+  attachTerminal(terminal) {
+      this.terminal = terminal
+      this.shell = new Shell(this, this.terminal);
   }
 
   //These should be moved to shell!
@@ -189,7 +195,7 @@ export default class Kernel {
         // We just hit enter and process is no longer trapped, set up read syscall
         if (process.system_call.continue_read_rip != 0) {
           this.processes[key].last_saved_rip =
-            process.system_call.continue_read_rip;
+            process.termsystem_call.continue_read_rip;
         }
         process.unicorn.emu_start(
           this.processes[key].last_saved_rip,
@@ -269,18 +275,18 @@ export default class Kernel {
     terminalchannel.onmessage = (ev) => this.write(ev.data);
 
     // Set up reverse proxy in frontend, note must be in HTTPS
-    navigator.serviceWorker.register("serviceWorker.js").then(
-      function (registration) {
-        // Registration was successful
-        console.log(
-          "ServiceWorker registration successful with scope: ",
-          registration.scope
-        );
-      },
-      function (err) {
-        // registration failed :(
-        console.log("ServiceWorker registration failed: ", err);
-      }
-    );
+    //navigator.serviceWorker.register("serviceWorker.js").then(
+    //  function (registration) {
+    //    // Registration was successful
+    //    console.log(
+    //      "ServiceWorker registration successful with scope: ",
+    //      registration.scope
+    //    );
+    //  },
+    //  function (err) {
+    //    // registration failed :(
+    //    console.log("ServiceWorker registration failed: ", err);
+    //  }
+    //);
   }
 }
