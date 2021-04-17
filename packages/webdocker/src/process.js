@@ -24,8 +24,8 @@ export default class Process {
     this.interpreter = "";
     this.interpreterEntry = 0x0;
 
-    this.unicorn = new uc.Unicorn(uc.ARCH_X86, uc.MODE_64);
-    this.unicorn.set_integer_type(ELF_INT_OBJECT);
+    //this.unicorn = new uc.Unicorn(uc.ARCH_X86, uc.MODE_64);
+    //this.unicorn.set_integer_type(ELF_INT_OBJECT);
 
     this.exit_flag = false;
     this.last_saved_rip = 0;
@@ -36,12 +36,14 @@ export default class Process {
 
     this.file = new File(this.image);
     this.logger = new Logger();
+    /*
     this.system_call = new SystemCall(
       this,
       this.unicorn,
       this.terminal,
       this.logger
     );
+    */
   }
 
   loadExecutable() {
@@ -431,19 +433,19 @@ export default class Process {
       this.command = this.image.command;
     }
 
-    this.loadExecutable();
-    this.loadInterpreter();
-    this.loadStack();
+    //this.loadExecutable();
+    //this.loadInterpreter();
+    //this.loadStack();
     // Write rip
-    this.last_saved_rip = this.interpreterEntry
-      ? this.interpreterEntry
-      : this.executableEntry;
+    //this.last_saved_rip = this.interpreterEntry
+    //  ? this.interpreterEntry
+    //  : this.executableEntry;
     // Start emulation
-    this.logger.log_to_document(
+    console.log(
       "[INFO]: emulation started at 0x" + this.last_saved_rip.toString(16) + "."
     );
 
-    this.workerProcess = new Worker("./javascript/src/worker/worker.js");
+    this.workerProcess = new Worker(new URL("./worker/worker.js", import.meta.url));
     const aBuf = this.file.buffer.slice(0);
     this.workerProcess.onmessage = (msg) => {
       // Worker is ready ,we can load process
@@ -452,7 +454,7 @@ export default class Process {
           payload: {
             executableBuffer: aBuf,
             command: this.command,
-            interpreterBuffer: this.interpreterBuffer,
+            interpreterBuffer: null,
           },
         },
         [aBuf]
