@@ -1,5 +1,12 @@
 [![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/TomatoSong/WebDocker)
 
+Main application is in the examples/www folder
+React and webdocker/brokeros is in the packages folder
+
+!!Since Create react app does not support packing wasm and webworkers, some of the code are put in the examples/www/public folder
+
+This is a monorepo, so yarn will install dependencies at the root folder
+
 # WebDocker
 
 Supported images
