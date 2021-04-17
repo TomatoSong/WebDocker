@@ -9,13 +9,14 @@
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "react-scripts": "4.0.2",
+    "react-app-rewired": "^2.1.8",
     "react-webdocker": "./packages/react-webdocker",
     "web-vitals": "^1.0.1"
   },
   "scripts": {
-    "start": "HTTPS=false react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
+    "start": "HTTPS=false react-app-rewired start",
+    "build": "react-app-rewired build",
+    "test": "react-app-rewired test",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
