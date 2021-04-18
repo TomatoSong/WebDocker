@@ -1,26 +1,15 @@
 import logo from './logo.svg';
 import './App.css';
 
-import Card from "react-webdocker"
+import WebDocker from "react-webdocker"
+
+import { Nav } from "./Nav.js"
 
 function App() {
   return (
     <div className="App">
-      <Card />
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <Nav />
+      <WebDocker />
     </div>
   );
 }
