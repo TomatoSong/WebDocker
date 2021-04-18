@@ -445,7 +445,7 @@ export default class Process {
       "[INFO]: emulation started at 0x" + this.last_saved_rip.toString(16) + "."
     );
 
-    this.workerProcess = new Worker(new URL("./worker/worker.js", import.meta.url));
+    this.workerProcess = new Worker("worker/worker.js");
     const aBuf = this.file.buffer.slice(0);
     this.workerProcess.onmessage = (msg) => {
       // Worker is ready ,we can load process

@@ -11,7 +11,7 @@ export default class ImageManager {
   }
 
   async openFile(file_name) {
-    const response = await fetch("bin/" + file_name);
+    const response = await fetch("cpp/bin/" + file_name);
     const file = await response.arrayBuffer();
 
     let return_image = new Image();
