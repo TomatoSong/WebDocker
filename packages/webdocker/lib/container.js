@@ -1,6 +1,6 @@
-var _PROXY_PREFIX = "https://www.simonyu.net:8080/";
+let _PROXY_PREFIX = "https://www.simonyu.net:8080/";
 
-const Container = (function() {
+export const Container = (function() {
   const exportedClasses = () => ({
 
     // A remote container image repository.
@@ -187,7 +187,7 @@ const Container = (function() {
     }
 
     _makeUrl(apiSuffix) {
-      const apiPrefix = 'https://' + this._registry + '/v2/' + this._repository;
+      const apiPrefix = location.protocol + '//' + this._registry + '/v2/' + this._repository;
       return apiPrefix + apiSuffix;
     }
 

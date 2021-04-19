@@ -8,7 +8,9 @@ import { DockerContext } from "./WebDockerContext";
 
 const UI = () => { 
 
-    const [terminal, setTerminal] = useState(new Terminal());
+    const [terminal, setTerminal] = useState(new Terminal({
+      convertEol: true
+    }));
     
     const terminalEl = useRef(null);
     

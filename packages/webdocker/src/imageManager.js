@@ -1,11 +1,17 @@
 import Image from "./image.js";
 
+import {Container} from "../lib/container.js"
+
+import untar from "js-untar";
+const pako = require('pako');
+
+
 export default class ImageManager {
   constructor() {
     this.images = {};
 
-    this.registry_url = "registry.hub.docker.com";
-    this.registry_proxy = "https://cors-anywhere.herokuapp.com/";
+    this.registry_url = location.host; //"registry.hub.docker.com";
+    this.registry_proxy = ""; //"https://cors-anywhere.herokuapp.com/";
     this.registry_username = ""; //"webdocker";
     this.registry_password = ""; //"@Webdocker";
   }

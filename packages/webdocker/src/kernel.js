@@ -13,7 +13,7 @@ export default class Kernel {
     this.imageManager = new ImageManager();
     this.processes = {};
     this.terminal = null;
-
+    this.terminalchannel = new BroadcastChannel("terminal");
     //this.start();
   }
 
@@ -68,6 +68,7 @@ export default class Kernel {
   attachTerminal(terminal) {
       this.terminal = terminal
       this.shell = new Shell(this, this.terminal);
+      this.terminalchannel.onmessage = (ev) => this.terminal.write(ev.data);
   }
 
   //These should be moved to shell!
@@ -271,8 +272,7 @@ export default class Kernel {
     // message format will be `resource`: terminal, console, disk, network, process
     // `type` will be read write, set, signal, error
     // and `payload` for buffered data
-    var terminalchannel = new BroadcastChannel("terminal");
-    terminalchannel.onmessage = (ev) => this.write(ev.data);
+
 
     // Set up reverse proxy in frontend, note must be in HTTPS
     //navigator.serviceWorker.register("serviceWorker.js").then(

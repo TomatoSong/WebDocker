@@ -76,6 +76,7 @@ export default class Shell {
     this.writeln("Welcome to WebDocker!");
     this.writeln("Type `help` for help");
     this.writeln("Usage:  docker run IMAGE [COMMAND] [ARG...]");
+    this.writeln("E.g.:  docker run library/hello-world");
     this.writeln("Run a command in a new container");
     this.writeln("");
     this.prompt();
