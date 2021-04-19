@@ -266,27 +266,4 @@ export default class Kernel {
     }, 0);
   }
 
-  start() {
-    //setTimeout(() => this.onTimeout(), 0);
-    // Setup different channels with mutex for message passing
-    // message format will be `resource`: terminal, console, disk, network, process
-    // `type` will be read write, set, signal, error
-    // and `payload` for buffered data
-
-
-    // Set up reverse proxy in frontend, note must be in HTTPS
-    //navigator.serviceWorker.register("serviceWorker.js").then(
-    //  function (registration) {
-    //    // Registration was successful
-    //    console.log(
-    //      "ServiceWorker registration successful with scope: ",
-    //      registration.scope
-    //    );
-    //  },
-    //  function (err) {
-    //    // registration failed :(
-    //    console.log("ServiceWorker registration failed: ", err);
-    //  }
-    //);
-  }
 }
