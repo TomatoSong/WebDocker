@@ -6,6 +6,9 @@ React and webdocker/brokeros is in the packages folder
 !!Since Create react app does not support packing wasm and webworkers, some of the code are put in the examples/www/public folder
 
 This is a monorepo, so yarn will install dependencies at the root folder
+Then go to packages/react-webdocker to use yarn build to build the dependencies
+Go to examples/www to use yarn start to start the example
+Finally use yarn build && yarn wrangler publish to publish
 
 # WebDocker
 
