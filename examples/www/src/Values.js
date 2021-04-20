@@ -64,8 +64,8 @@ export function Values() {
                 Web IDE
               </Typography>
               <Typography variant="h6">
-                {'Map files, compile the code, and grab the output all in one browser '}
-                {'You can even build projects and directly flash it to IoT devices using WebUSB.'}
+                {'Map files, compile the code, and grab the output all in one browser. '}
+                {'You can even build projects and directly flash it to IoT devices over WebUSB.'}
               </Typography>
             </div>
           </Grid>
