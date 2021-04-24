@@ -264,6 +264,7 @@ class SystemCall {
     // Assmue length is page aligned
     this.logger.log_to_document([addr.hex(), length.hex()]);
     this.logger.log_to_document([this.mmap_addr.toString(16), length.hex()]);
+    this.logger.log_to_document([this.mmap_addr.toString(16), adjustedLength]);
     this.unicorn.mem_map(this.mmap_addr, adjustedLength, uc.PROT_ALL);
 
     if (this.opened_files[fd.num()]) {

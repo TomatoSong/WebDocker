@@ -1,6 +1,6 @@
 importScripts(
-  "./unicorn.min.js",
   "./libelf.min.js",
+  "./unicorn.min.js",
   "./file.js",
   "./systemCallTable.js",
   "./workerSystemCallHandler.js",
@@ -19,12 +19,20 @@ console.log(MUnicorn);
 if (isFunction(MUnicorn)) {
   MUnicorn().then(() => {
     process = new Process();
-    self.postMessage({type: "LOAD_PROCESS"});
+    self.postMessage({type: "LOAD_EXECUTABLE"});
     self.onmessage = async function (msg) {
-      process.file.buffer = msg.data.payload.executableBuffer;
-      process.interpreterBuffer = msg.data.payload.interpreterBuffer;
-      process.load(msg.data.payload.command);
-
+      if (msg.data.type == "LOAD_EXECUTABLE") {
+        process.file.buffer = msg.data.payload.executableBuffer;
+        var res = process.load(msg.data.payload.command);
+        if (res === 1) {
+          self.postMessage({type: "LOAD_INTERPRETER", payload: process.interpreter});
+          return;
+        }
+      } else if (msg.data.type == "LOAD_INTERPRETER") {
+        process.interpreterBuffer = msg.data.payload.interpreterBuffer;
+        process.loadRest()
+      }
+     
       console.log("process loaded async");
       while (true) {
         // Process interrupts

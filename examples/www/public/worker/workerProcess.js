@@ -423,6 +423,15 @@ class Process {
   load(command) {
     this.command = command;
     this.loadExecutable();
+    if (this.interpreter === "") {
+      this.loadRest();
+      return 0;
+    } else {
+      return 1;
+    }
+  }
+  
+  loadRest() {
     this.loadInterpreter();
     this.loadStack();
     // Write rip

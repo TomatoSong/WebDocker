@@ -446,16 +446,32 @@ export default class Process {
     );
 
     this.workerProcess = new Worker("worker/worker.js");
-    const aBuf = this.file.buffer.slice(0);
+    
     this.workerProcess.onmessage = (msg) => {
-      if (msg.data.type == "LOAD_PROCESS") {
+      if (msg.data.type == "LOAD_EXECUTABLE") {
         // Worker is ready ,we can load process
+        const aBuf = this.file.buffer.slice(0);
         this.workerProcess.postMessage(
           {
+            type: "LOAD_EXECUTABLE",
             payload: {
               executableBuffer: aBuf,
               command: this.command,
               interpreterBuffer: null,
+            },
+          },
+          [aBuf]
+        );
+      } else if (msg.data.type == "LOAD_INTERPRETER") {
+        const interpreter = msg.data.payload
+        const interpreterFile = new File(this.image);
+        interpreterFile.open(interpreter.replace(/^\//, ""));
+        const aBuf = interpreterFile.buffer.slice(0);
+        this.workerProcess.postMessage(
+          {
+            type: "LOAD_INTERPRETER",
+            payload: {
+              interpreterBuffer: aBuf,
             },
           },
           [aBuf]
