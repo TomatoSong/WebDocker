@@ -30,7 +30,10 @@ const UI = () => {
     }, [terminalEl.current]);
     
     return (
-      <div ref={terminalEl} id="terminal"></div>
+        <div>
+          <div ref={terminalEl} id="terminal"></div>
+          <div id="panel"></div>
+        </div>
     )
 }
 
