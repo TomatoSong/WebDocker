@@ -130,7 +130,7 @@ class SystemCall {
     const buffer = this.unicorn.mem_read(buf, count.num());
     const string = new TextDecoder("utf-8").decode(buffer);
 
-    self.postMessage({payload: string});
+    self.postMessage({type: "WRITE_TERMINAL", payload: string});
     this.syscall_yield_flag = true;
 
     return count.num();
@@ -356,7 +356,7 @@ class SystemCall {
 
       const buffer = this.unicorn.mem_read(iov_base, iov_len);
       const string = new TextDecoder("utf-8").decode(buffer);
-      self.postMessage({payload: string});
+      self.postMessage({type: "WRITE_TERMINAL", payload: string});
       this.syscall_yield_flag = true;
 
       bytes_written += iov_len;
@@ -585,7 +585,7 @@ class SystemCall {
       "Linux\0",
       "WebDocker\0",
       "5.4.0-53-generic\0",
-      "v12/25/2020\0",
+      "v4/24/2021\0",
       "x86_64\0",
     ];
 

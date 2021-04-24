@@ -448,7 +448,7 @@ export default class Process {
     this.workerProcess = new Worker("worker/worker.js");
     const aBuf = this.file.buffer.slice(0);
     this.workerProcess.onmessage = (msg) => {
-      if (msg.data == "process loaded") {
+      if (msg.data.type == "LOAD_PROCESS") {
         // Worker is ready ,we can load process
         this.workerProcess.postMessage(
           {

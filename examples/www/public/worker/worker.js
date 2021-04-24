@@ -19,7 +19,7 @@ console.log(MUnicorn);
 if (isFunction(MUnicorn)) {
   MUnicorn().then(() => {
     process = new Process();
-    self.postMessage("process loaded");
+    self.postMessage({type: "LOAD_PROCESS"});
     self.onmessage = async function (msg) {
       process.file.buffer = msg.data.payload.executableBuffer;
       process.interpreterBuffer = msg.data.payload.interpreterBuffer;
@@ -109,12 +109,6 @@ if (isFunction(MUnicorn)) {
   process = new Process();
   self.postMessage("process loaded sync");
 }
-
-var channel = new BroadcastChannel("my_bus");
-
-channel.onmessage = function (ev) {
-  console.log(ev.data);
-};
 
 let mode = "inner";
 let pausePromise = null;
