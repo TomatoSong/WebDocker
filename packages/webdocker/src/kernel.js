@@ -4,16 +4,14 @@ import Shell from "./shell.js";
 import Image from "./image.js";
 
 export default class Kernel {
-  constructor(terminal) {
+  constructor() {
     // Launch shell or we will run in headless mode
     // Terminal should be defined here in kernel and passed to sheel
     //, instead of shell
-    //this.terminal = terminal;
-    //this.shell = new Shell(this, this.terminal);
     this.imageManager = new ImageManager();
     this.processes = {};
     this.terminal = null;
-    //this.start();
+    this.shell = null;
   }
 
   write(string) {

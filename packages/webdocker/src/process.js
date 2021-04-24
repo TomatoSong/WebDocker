@@ -1,5 +1,4 @@
 import File from "./file.js";
-import Logger from "./logger.js";
 
 export default class Process {
   constructor(pid, kernel, image) {
@@ -12,7 +11,6 @@ export default class Process {
 
     this.command = [];
     this.file = new File(this.image);
-    this.logger = new Logger();
   }
 
   start(command) {
