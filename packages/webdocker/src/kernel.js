@@ -110,8 +110,8 @@ export default class Kernel {
               console.log(image);
               let pid = this.get_new_pid();
               let process = new Process(pid, this, image);
-              process.load(args);
-              //this.processes[pid] = process;
+              process.start(args);
+              this.processes[pid] = process;
             })
             .catch((error) => {
               console.log(error);
@@ -166,7 +166,7 @@ export default class Kernel {
         let pid = this.get_new_pid();
         let process = new Process(pid, this, image);
         command[0] = "/" + command[0];
-        process.load(command);
+        process.start(command);
         this.processes[pid] = process;
       });
     }

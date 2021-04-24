@@ -110,13 +110,11 @@ class SystemCall {
 
       this.unicorn.mem_write(rsi, new TextEncoder("utf-8").encode(buffer));
       this.unicorn.reg_write_i64(uc.X86_REG_RAX, buffer.length);
-      this.terminal.shell.trapped = false;
-      this.terminal.shell.trapped_pid = -1;
+
       this.continue_read_rip = 0;
     } else {
       this.process.trapped = true;
-      this.terminal.shell.trapped = true;
-      this.terminal.shell.trapped_pid = this.process.pid;
+      self.postMessage({type: "READ_TERMINAL"});
       this.continue_read_rip = rip;
       this.unicorn.emu_stop();
     }
@@ -264,7 +262,6 @@ class SystemCall {
     // Assmue length is page aligned
     this.logger.log_to_document([addr.hex(), length.hex()]);
     this.logger.log_to_document([this.mmap_addr.toString(16), length.hex()]);
-    this.logger.log_to_document([this.mmap_addr.toString(16), adjustedLength]);
     this.unicorn.mem_map(this.mmap_addr, adjustedLength, uc.PROT_ALL);
 
     if (this.opened_files[fd.num()]) {
