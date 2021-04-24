@@ -13,7 +13,6 @@ export default class Kernel {
     this.imageManager = new ImageManager();
     this.processes = {};
     this.terminal = null;
-    this.terminalchannel = new BroadcastChannel("terminal");
     //this.start();
   }
 
@@ -68,7 +67,6 @@ export default class Kernel {
   attachTerminal(terminal) {
       this.terminal = terminal
       this.shell = new Shell(this, this.terminal);
-      this.terminalchannel.onmessage = (ev) => this.terminal.write(ev.data);
   }
 
   //These should be moved to shell!

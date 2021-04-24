@@ -1,4 +1,3 @@
-var terminalchannel = new BroadcastChannel("terminal");
 
 class SystemCall {
   constructor(process, unicorn, terminal, logger) {
@@ -131,7 +130,7 @@ class SystemCall {
     const buffer = this.unicorn.mem_read(buf, count.num());
     const string = new TextDecoder("utf-8").decode(buffer);
 
-    terminalchannel.postMessage(string);
+    self.postMessage({payload: string});
     this.syscall_yield_flag = true;
 
     return count.num();
@@ -357,7 +356,7 @@ class SystemCall {
 
       const buffer = this.unicorn.mem_read(iov_base, iov_len);
       const string = new TextDecoder("utf-8").decode(buffer);
-      terminalchannel.postMessage(string);
+      self.postMessage({payload: string});
       this.syscall_yield_flag = true;
 
       bytes_written += iov_len;
