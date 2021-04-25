@@ -105,7 +105,9 @@ export default class Shell {
           this.trapped = false;
           this.kernel.processes[this.trapped_pid].buffer = this.buffer;
           this.kernel.processes[this.trapped_pid].trapped = false;
+          this.kernel.processes[this.trapped_pid].workerProcess.postMessage({type: "READ_TERMINAL", payload: this.buffer})
           this.reset_buffer();
+          
         } else {
           this.kernel.onCmd(this.buffer);
         }

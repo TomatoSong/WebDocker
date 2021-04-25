@@ -31,6 +31,9 @@ if (isFunction(MUnicorn)) {
       } else if (msg.data.type == "LOAD_INTERPRETER") {
         process.interpreterBuffer = msg.data.payload.interpreterBuffer;
         process.loadRest()
+      } else if (msg.data.type == "READ_TERMINAL") {
+        process.trapped = false;
+        process.buffer = msg.data.payload;
       }
      
       console.log("process loaded async");
@@ -55,6 +58,7 @@ if (isFunction(MUnicorn)) {
         try {
           // We just hit enter and process is no longer trapped, set up read syscall
           if (process.system_call.continue_read_rip != 0) {
+            process.trapped = false
             process.last_saved_rip = process.system_call.continue_read_rip;
           }
           process.unicorn.emu_start(process.last_saved_rip, 0xfffffff, 0, 0);
@@ -110,7 +114,6 @@ if (isFunction(MUnicorn)) {
           return;
         }
       }
-      self.close();
     };
   });
 } else {

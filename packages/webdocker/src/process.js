@@ -53,8 +53,8 @@ export default class Process {
           [aBuf]
         );
       } else if (msg.data.type == "READ_TERMINAL") {
-        const read_terminal_flag = true;
-        this.trapped = true;
+        this.kernel.shell.trapped = true;
+        this.kernel.shell.trapped_pid = this.pid;
       } else {
         // Msg is write to terminal
         this.kernel.write(msg.data.payload);
