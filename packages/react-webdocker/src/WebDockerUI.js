@@ -6,6 +6,8 @@ import 'xterm/css/xterm.css'
 
 import { DockerContext } from "./WebDockerContext";
 
+import {ImageDropzone} from "./ImageDropzone"
+
 const UI = () => { 
 
     const [terminal, setTerminal] = useState(new Terminal({
@@ -33,6 +35,7 @@ const UI = () => {
         <div>
           <div ref={terminalEl} id="terminal"></div>
           <div id="panel"></div>
+          <ImageDropzone />
         </div>
     )
 }
