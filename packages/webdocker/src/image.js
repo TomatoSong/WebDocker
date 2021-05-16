@@ -1,10 +1,10 @@
-import Image from "./image.js";
+import Image from './image.js';
 
 export default class ImageManager {
-  constructor() {
-    this.path = "";
-    this.command = "";
-    this.files = {};
-    this.written_files = {};
-  }
+    constructor() {
+        this.path = '';
+        this.command = '';
+        this.files = {};
+        this.written_files = {};
+    }
 }
