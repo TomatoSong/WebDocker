@@ -81,6 +81,32 @@ export default class Shell {
         this.prompt();
     }
 
+    onCmd(buffer) {
+        let buffer_array = buffer.split(' ');
+
+        if (buffer_array[0] == 'help') {
+            this.kernel.help();
+            this.prompt();
+        } else if (buffer_array[0] == 'docker') {
+            if (buffer_array[1] && buffer_array[1] == 'run') {
+                if (!buffer_array[2] || buffer_array[2] == '') {
+                    this.writeln('ERROR: invalid docker image name.');
+                    this.prompt();
+                } else {
+                    let image = buffer_array[2];
+                    let args = buffer_array.slice(3);
+
+                    this.kernel.run(image, args);
+                }
+            } else {
+                this.writeln('ERROR: invalid docker command.');
+                this.prompt();
+            }
+        } else if (buffer_array[0] == '') {
+            this.prompt();
+        }
+    }
+
     onKey(e) {
         const ev = e.domEvent;
         const printable = !ev.altKey && !ev.ctrlKey && !ev.metaKey;
@@ -113,7 +139,7 @@ export default class Shell {
                     });
                     this.reset_buffer();
                 } else {
-                    this.kernel.onCmd(this.buffer);
+                    this.onCmd(this.buffer);
                 }
 
                 this.reset_buffer();

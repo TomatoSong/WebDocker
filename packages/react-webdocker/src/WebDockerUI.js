@@ -29,7 +29,7 @@ const UI = () => {
             terminal.focus();
             fitAddon.fit();
             terminal.write('Hello from \x1B[1;3;31mxterm.js \x1B[0m $ ');
-            dockerContext.attachTerminal(terminal);
+            dockerContext.startShell(terminal);
         }
     }, [terminalEl.current]);
 
