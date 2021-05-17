@@ -4,6 +4,8 @@ import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import 'xterm/css/xterm.css';
 
+import { Paper, Grid } from '@material-ui/core';
+
 import { DockerContext } from './WebDockerContext';
 
 import { ImageDropzone } from './ImageDropzone';
@@ -33,9 +35,15 @@ const UI = () => {
 
     return (
         <div>
-            <div ref={terminalEl} id="terminal"></div>
-            <div id="panel"></div>
-            <ImageDropzone />
+            <Grid container space={3}>
+                <Grid item xs={6}>
+                    <div ref={terminalEl} id="terminal"></div>
+                </Grid>
+                <Grid item xs={6}>
+                    <div id="panel"></div>
+                    <ImageDropzone />
+                </Grid>
+            </Grid>
         </div>
     );
 };

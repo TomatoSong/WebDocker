@@ -1,14 +1,23 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import Dropzone from 'react-dropzone';
 
+import { DockerContext } from './WebDockerContext';
+
 const ImageDropzone = props => {
+    const dockerContext = useContext(DockerContext);
+
+    const onDrop = acceptedFiles => {
+        acceptedFiles.forEach(file => dockerContext.load(file));
+    };
+
     return (
-        <Dropzone>
+        <Dropzone onDrop={onDrop}>
             {({ getRootProps, getInputProps }) => (
                 <div {...getRootProps()}>
                     <input {...getInputProps()} />
                     <p>
-                        Drag 'n' drop some files here, or click to select files
+                        Drag 'n' drop a docker image that is exported by 'docker
+                        save' here, or click to select files
                     </p>
                 </div>
             )}
