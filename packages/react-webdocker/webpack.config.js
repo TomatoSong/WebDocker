@@ -39,6 +39,21 @@ module.exports = {
             commonjs2: "react",          
             amd: "react",          
             root: "React"      
-        }      
+        },
+        "react-dom": {          
+            commonjs: "react-dom",          
+            commonjs2: "react-dom",          
+            amd: "react-dom",          
+            root: "ReactDOM"      
+        },
+        "@material-ui/core": {          
+            commonjs: "@material-ui/core",          
+            commonjs2: "@material-ui/core",          
+            amd: "@material-ui/core",          
+            root: "MaterialUI"      
+        }  
     } 
 };
+
+
+
