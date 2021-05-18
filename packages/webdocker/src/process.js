@@ -57,7 +57,7 @@ export default class Process {
                 this.kernel.shell.trapped_pid = this.pid;
             } else {
                 // Msg is write to terminal
-                this.kernel.write(msg.data.payload);
+                this.kernel.write(msg.data?.payload);
             }
         };
     }

@@ -1,10 +1,18 @@
 const path = require("path");
 
 module.exports = {
+  optimization: {
+    minimize: false
+  },
   entry: "./src/index.js",
   plugins: [],
   module: {
     rules: [
+      {
+        test: /\.m?js$/,
+        enforce: "pre",
+        use: ["source-map-loader"],
+      },
       {
         test: /\.m?js$/,
         exclude: /node_modules/,
