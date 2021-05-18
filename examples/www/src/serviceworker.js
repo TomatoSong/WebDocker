@@ -10,11 +10,7 @@ self.addEventListener('install', function (event) {
     );
 });
 
-// Connect to the channel named "my_bus".
-var channel = new BroadcastChannel('my_bus');
-
 self.addEventListener('fetch', function (event) {
-    channel.postMessage({ url: event.request.url });
     if (event.request.url == 'https://qq.com/') {
         // Replace this with web docker socket output
         var p = Promise.resolve(

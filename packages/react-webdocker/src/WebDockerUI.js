@@ -8,7 +8,7 @@ import { Paper, Grid } from '@material-ui/core';
 
 import { DockerContext } from './WebDockerContext';
 
-import { ImageDropzone } from './ImageDropzone';
+import { ControlPanel } from './ControlPanel';
 
 const UI = () => {
     const [terminal, setTerminal] = useState(
@@ -40,8 +40,7 @@ const UI = () => {
                     <div ref={terminalEl} id="terminal"></div>
                 </Grid>
                 <Grid item xs={6}>
-                    <div id="panel"></div>
-                    <ImageDropzone />
+                    <ControlPanel />
                 </Grid>
             </Grid>
         </div>
