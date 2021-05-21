@@ -11,7 +11,7 @@ const AddDevice = props => {
         dockerContext.mapUSBDevice();
     };
 
-    return <Button variant="contained">Add USB Devices</Button>;
+    return <Button variant="contained" onClick={onClick}>Add USB Devices</Button>;
 };
 
 export { AddDevice };
