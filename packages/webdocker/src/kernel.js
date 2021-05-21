@@ -64,4 +64,15 @@ export default class Kernel {
         const max_pid = Math.max(...Object.keys(this.processes));
         return max_pid === -Infinity ? 1 : max_pid + 1;
     }
+
+    mapUSBDevice() {
+        if (navigator.usb) {
+            navigator.usb
+                .requestDevice({ filters: [] })
+                .then(usbDevice =>
+                    console.log('Produce name' + usbDevice.produceName)
+                )
+                .catch(e => console.log('There is no device .' + e));
+        }
+    }
 }
