@@ -8,6 +8,7 @@ export default class Kernel {
         this.processes = {};
         this.terminal = null;
         this.shell = null;
+        this.forceRerender = () => {};
     }
 
     write(string) {
@@ -53,6 +54,9 @@ export default class Kernel {
                 let process = new Process(pid, this, image);
                 process.start(args);
                 this.processes[pid] = process;
+            })
+            .then(() => {
+                this.forceRerender();
             })
             .catch(error => {
                 console.log(error);

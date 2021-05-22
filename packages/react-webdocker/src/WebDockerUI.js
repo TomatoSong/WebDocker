@@ -19,9 +19,11 @@ const UI = () => {
 
     const terminalEl = useRef(null);
 
-    const {docker, forceRerender} = useContext(DockerContext);
-    
-    const [terminalDiv, setTerminalDiv] = useState(<div ref={terminalEl} id="terminal"></div>)
+    const { docker, forceRerender } = useContext(DockerContext);
+
+    const [terminalDiv, setTerminalDiv] = useState(
+        <div ref={terminalEl} id="terminal"></div>
+    );
 
     useEffect(() => {
         if (terminalEl.current) {
@@ -32,12 +34,6 @@ const UI = () => {
             fitAddon.fit();
             terminal.write('Hello from \x1B[1;3;31mxterm.js \x1B[0m $ ');
             docker.startShell(terminal);
-            terminal.onKey((e) => {
-              if (e.domEvent.keyCode == 13) { // enter
-                console.log("forcererender")
-                //forceRerender()
-              }
-            })
         }
     }, [terminalEl.current]);
 

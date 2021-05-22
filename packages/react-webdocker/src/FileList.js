@@ -16,17 +16,28 @@ const useStyles = makeStyles({
 
 export const FileList = props => {
     const dockerContext = useContext(DockerContext).docker;
-    
-    useEffect(() => console.log(dockerContext.processes), [dockerContext.processes])
+
+    useEffect(() => {
+        console.log(dockerContext.processes);
+    }, [dockerContext.processes]);
 
     const classes = useStyles();
-    
-    const renderTree = (files, path) => {
+
+    const renderTree = (files, currentPath) => {
         if (!files) {
-            return "No files"
+            return 'No files';
         }
-        return "Hello"
-    }
+        const level = (currentPath.match(/\//g) || []).length;
+        const folders = Object.keys(files).filter(
+            path =>
+                (path.match(/\//g) || []).length == level + 1 &&
+                path.slice(-1) == '/'
+        );
+
+        return folders.map(folder => (
+            <TreeItem key={folder} label={folder} nodeId={folder} />
+        ));
+    };
 
     return (
         <TreeView
@@ -34,7 +45,7 @@ export const FileList = props => {
             defaultCollapseIcon={<ExpandMore />}
             defaultExpandIcon={<ChevronRight />}
         >
-            {renderTree(dockerContext.processes[1]?.image, "/")}
+            {renderTree(dockerContext.processes['1']?.image?.files, '')}
         </TreeView>
     );
 };
