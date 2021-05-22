@@ -12,6 +12,7 @@ import { DockerContext } from './WebDockerContext';
 
 import { ImageDropzone } from './ImageDropzone';
 import { AddDevice } from './AddDevice';
+import { FileList } from './FileList';
 import { ControlPanelTabs } from './ControlPanelTabs';
 
 const useStyles = makeStyles(() => ({ root: { width: 150 } }));
@@ -41,6 +42,7 @@ const ControlPanel = props => {
             </div>
             <ImageDropzone />
             <AddDevice />
+            <FileList />
         </>
     );
 };
