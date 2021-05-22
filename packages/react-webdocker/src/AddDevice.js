@@ -5,7 +5,7 @@ import { Button } from '@material-ui/core';
 import { DockerContext } from './WebDockerContext';
 
 const AddDevice = props => {
-    const dockerContext = useContext(DockerContext);
+    const dockerContext = useContext(DockerContext).docker;
 
     const onClick = () => {
         dockerContext.mapUSBDevice();

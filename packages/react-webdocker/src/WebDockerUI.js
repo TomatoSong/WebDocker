@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useContext } from 'react';
+import React, { useEffect, useState, useRef, useContext, useMemo } from 'react';
 
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
@@ -19,7 +19,9 @@ const UI = () => {
 
     const terminalEl = useRef(null);
 
-    const dockerContext = useContext(DockerContext);
+    const {docker, forceRerender} = useContext(DockerContext);
+    
+    const [terminalDiv, setTerminalDiv] = useState(<div ref={terminalEl} id="terminal"></div>)
 
     useEffect(() => {
         if (terminalEl.current) {
@@ -29,7 +31,13 @@ const UI = () => {
             terminal.focus();
             fitAddon.fit();
             terminal.write('Hello from \x1B[1;3;31mxterm.js \x1B[0m $ ');
-            dockerContext.startShell(terminal);
+            docker.startShell(terminal);
+            terminal.onKey((e) => {
+              if (e.domEvent.keyCode == 13) { // enter
+                console.log("forcererender")
+                //forceRerender()
+              }
+            })
         }
     }, [terminalEl.current]);
 
@@ -37,7 +45,7 @@ const UI = () => {
         <div>
             <Grid container space={3}>
                 <Grid item xs={6}>
-                    <div ref={terminalEl} id="terminal"></div>
+                    {terminalDiv}
                 </Grid>
                 <Grid item xs={6}>
                     <ControlPanel />

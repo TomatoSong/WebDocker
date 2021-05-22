@@ -4,7 +4,7 @@ import Dropzone from 'react-dropzone';
 import { DockerContext } from './WebDockerContext';
 
 const ImageDropzone = props => {
-    const dockerContext = useContext(DockerContext);
+    const dockerContext = useContext(DockerContext).docker;
 
     const onDrop = acceptedFiles => {
         acceptedFiles.forEach(file => dockerContext.load(file));

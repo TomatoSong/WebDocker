@@ -6,8 +6,12 @@ import { UI } from './WebDockerUI';
 import Kernel from 'webdocker';
 
 const WebDocker = () => {
+    const [docker, setDocker] = useState([new Kernel()])
+    
+    const forceRerender = () => {setDocker([...docker])}
+    
     return (
-        <DockerContext.Provider value={new Kernel()}>
+        <DockerContext.Provider value={{docker: docker[0], forceRerender}}>
             <UI />
         </DockerContext.Provider>
     );

@@ -15,7 +15,7 @@ const useStyles = makeStyles({
 });
 
 export const FileList = props => {
-    const dockerContext = useContext(DockerContext);
+    const dockerContext = useContext(DockerContext).docker;
     
     useEffect(() => console.log(dockerContext.processes), [dockerContext.processes])
 

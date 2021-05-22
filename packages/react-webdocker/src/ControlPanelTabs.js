@@ -4,7 +4,7 @@ import { Tabs, Tab, AppBar } from '@material-ui/core';
 import { DockerContext } from './WebDockerContext';
 
 const ControlPanelTabs = props => {
-    const dockerContext = useContext(DockerContext);
+    const dockerContext = useContext(DockerContext).docker;
 
     return (
         <div>

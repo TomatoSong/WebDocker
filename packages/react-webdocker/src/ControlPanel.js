@@ -19,7 +19,7 @@ const useStyles = makeStyles(() => ({ root: { width: 150 } }));
 
 const ControlPanel = props => {
     const classes = useStyles();
-    const dockerContext = useContext(DockerContext);
+    const dockerContext = useContext(DockerContext).docker;
 
     return (
         <>
