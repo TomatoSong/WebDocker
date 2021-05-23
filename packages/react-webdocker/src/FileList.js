@@ -17,10 +17,6 @@ const useStyles = makeStyles({
 export const FileList = props => {
     const dockerContext = useContext(DockerContext).docker;
 
-    useEffect(() => {
-        console.log(dockerContext.processes);
-    }, [dockerContext.processes]);
-
     const classes = useStyles();
 
     const renderTree = (files, currentPath) => {

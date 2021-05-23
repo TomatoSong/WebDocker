@@ -24,9 +24,13 @@ const UI = () => {
     const [terminalDiv, setTerminalDiv] = useState(
         <div ref={terminalEl} id="terminal"></div>
     );
+    
+    const [terminalRegistered, setTerminalRegistered] = useState(false
+    );
+   
 
     useEffect(() => {
-        if (terminalEl.current) {
+        if (terminalEl.current && !terminalRegistered) {
             const fitAddon = new FitAddon();
             terminal.loadAddon(fitAddon);
             terminal.open(terminalEl.current);
@@ -34,8 +38,9 @@ const UI = () => {
             fitAddon.fit();
             terminal.write('Hello from \x1B[1;3;31mxterm.js \x1B[0m $ ');
             docker.startShell(terminal);
+            setTerminalRegistered(true)
         }
-    }, [terminalEl.current]);
+    }, [terminalEl.current, terminalRegistered]);
 
     return (
         <div>
