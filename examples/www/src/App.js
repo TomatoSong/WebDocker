@@ -1,4 +1,4 @@
-import logo from './logo.svg';
+import logo from './logo.svg'; // eslint-disable-line
 import './App.css';
 
 import WebDocker from 'react-webdocker';

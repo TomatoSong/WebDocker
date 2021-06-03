@@ -44,10 +44,10 @@ const UI = () => {
         <div>
             <Grid container space={3}>
                 <Grid item xs={6}>
-                    {terminalDiv}
+                    <ControlPanel />
                 </Grid>
                 <Grid item xs={6}>
-                    <ControlPanel />
+                    {terminalDiv}
                 </Grid>
             </Grid>
         </div>
